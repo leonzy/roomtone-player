@@ -7,6 +7,7 @@ import '../providers/output_provider.dart';
 import '../widgets/power_toggle.dart';
 import 'eq_sheet.dart';
 import 'group_editor.dart';
+import 'party_sheet.dart';
 import 'transfer_sheet.dart';
 
 /// 播放输出面板（F0）：设备列表 + 组归属 + 待机/音量/发现。
@@ -147,6 +148,15 @@ class _OutputPageState extends ConsumerState<OutputPage> {
             onPressed:
                 state.busy ? null : () => showCreateGroupSheet(context, ref),
             icon: const Icon(Icons.speaker_group_outlined),
+          ),
+          IconButton(
+            tooltip: state.party == null ? '开启派对' : '派对中',
+            onPressed: state.busy ? null : () => showPartySheet(context),
+            icon: Icon(
+              state.party == null
+                  ? Icons.celebration_outlined
+                  : Icons.celebration,
+            ),
           ),
           IconButton(
             tooltip: '扫描音箱',
