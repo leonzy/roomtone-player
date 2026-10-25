@@ -271,6 +271,24 @@ class OutputApi {
     }
   }
 
+  /// 调整成员顺序（必须是该组全部成员 id 的全排列）。
+  ///
+  /// 顺序只影响列表与"主控候选"提示，不改主控；非法顺序服务端返回 400。
+  Future<OutputGroup> reorderMembers(
+    String groupId,
+    List<String> playerIds,
+  ) async {
+    try {
+      final res = await dio.put<Map<String, dynamic>>(
+        '$_groupBase/$groupId/members/order',
+        data: {'player_ids': playerIds},
+      );
+      return OutputGroup.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// 移出成员。mode=continue 让它继续播自己的内容，stop 立即停止出声。
   Future<void> removeMember(
     String groupId,

@@ -469,6 +469,9 @@ class _DeviceRow extends ConsumerWidget {
           ? '精确同步'
           : '起播对齐',
     );
+    if (group.memberCaps.any((c) => c.playerId == playerId && c.syncing)) {
+      parts.add('对齐中');
+    }
     if (member.delayMs != 0) parts.add('延迟 ${member.delayMs}ms');
     if (member.volumeOffset != 0) parts.add('音量偏移 ${member.volumeOffset}');
     if (device != null && device.caps.needsPassword) parts.add('需要密码');

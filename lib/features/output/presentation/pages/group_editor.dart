@@ -213,6 +213,31 @@ Future<void> showMemberSheet(
                     onChanged: (v) => setLocal(() => offset = v),
                   ),
                   const SizedBox(height: 12),
+                  _OrderRow(
+                    group: group,
+                    playerId: playerId,
+                    onMove: (delta) async {
+                      final ids = group.members.map((m) => m.playerId).toList();
+                      final from = ids.indexOf(playerId);
+                      final to = from + delta;
+                      if (from < 0 || to < 0 || to >= ids.length) return;
+                      ids.removeAt(from);
+                      ids.insert(to, playerId);
+                      final ok = await controller.reorderMembers(group.id, ids);
+                      if (ctx.mounted) Navigator.of(ctx).pop();
+                      if (!context.mounted) return;
+                      final s = ref.read(outputControllerProvider);
+                      if (ok) {
+                        ResponsiveSnackBar.showSuccess(
+                          context,
+                          message: '已调整成员顺序',
+                        );
+                      } else if (s.error.isNotEmpty) {
+                        ResponsiveSnackBar.showError(context, message: s.error);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () async {
                       final ok = await controller.updateMember(
@@ -299,4 +324,41 @@ Future<void> showMemberSheet(
           },
         ),
   );
+}
+
+/// 上移 / 下移：TV 上没有拖拽，这两个按钮是唯一可达的排序方式。
+///
+/// 顺序决定"主控候选"提示（主控本身是显式的，不会因为排序改变）。
+class _OrderRow extends StatelessWidget {
+  const _OrderRow({
+    required this.group,
+    required this.playerId,
+    required this.onMove,
+  });
+
+  final OutputGroup group;
+  final String playerId;
+  final ValueChanged<int> onMove;
+
+  @override
+  Widget build(BuildContext context) {
+    final ids = group.members.map((m) => m.playerId).toList();
+    final index = ids.indexOf(playerId);
+    return Row(
+      children: [
+        const Expanded(child: Text('顺序')),
+        IconButton(
+          tooltip: '上移',
+          onPressed: index > 0 ? () => onMove(-1) : null,
+          icon: const Icon(Icons.arrow_upward),
+        ),
+        IconButton(
+          tooltip: '下移',
+          onPressed:
+              index >= 0 && index < ids.length - 1 ? () => onMove(1) : null,
+          icon: const Icon(Icons.arrow_downward),
+        ),
+      ],
+    );
+  }
 }

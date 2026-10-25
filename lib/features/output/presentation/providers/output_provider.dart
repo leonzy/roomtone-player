@@ -295,6 +295,10 @@ class OutputController extends Notifier<OutputState> {
     notice: '已更新成员参数',
   );
 
+  /// 成员顺序：传全排列，服务端拒绝非法顺序（400）。
+  Future<bool> reorderMembers(String groupId, List<String> playerIds) =>
+      _run(() => _api.reorderMembers(groupId, playerIds), notice: '已调整成员顺序');
+
   /// 组音量：部分设备失败也算成功（后端不回滚已成功的成员），
   /// 失败明细通过返回值里 members[].error 展示。
   Future<GroupVolume?> setGroupVolume(

@@ -272,6 +272,7 @@ class MemberCaps {
     this.kind = OutputKind.local,
     this.online = false,
     this.syncTier = SyncTier.exact,
+    this.syncing = false,
   });
 
   final String playerId;
@@ -279,11 +280,15 @@ class MemberCaps {
   final bool online;
   final SyncTier syncTier;
 
+  /// 刚入组 / 刚唤醒，还没走完一个校正周期：显示"对齐中"。
+  final bool syncing;
+
   factory MemberCaps.fromJson(Map<String, dynamic> json) => MemberCaps(
     playerId: json['player_id'] as String? ?? '',
     kind: OutputKind.parse(json['kind'] as String?),
     online: json['online'] as bool? ?? false,
     syncTier: SyncTier.parse(json['sync_tier'] as String?),
+    syncing: json['syncing'] as bool? ?? false,
   );
 }
 
