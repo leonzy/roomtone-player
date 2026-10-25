@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../domain/output_models.dart';
 import '../providers/output_provider.dart';
+import '../../../alarms/presentation/pages/alarms_page.dart';
 import '../widgets/power_toggle.dart';
+import 'playback_tuning_sheet.dart';
 import 'eq_sheet.dart';
 import 'group_editor.dart';
 import 'metrics_sheet.dart';
@@ -163,6 +165,19 @@ class _OutputPageState extends ConsumerState<OutputPage> {
             tooltip: '扫描音箱',
             onPressed: state.busy ? null : _discover,
             icon: const Icon(Icons.wifi_find_outlined),
+          ),
+          IconButton(
+            tooltip: '播放调音（交叉淡化 / 响度均衡）',
+            onPressed: () => showPlaybackTuningSheet(context),
+            icon: const Icon(Icons.tune),
+          ),
+          IconButton(
+            tooltip: '闹钟',
+            onPressed:
+                () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const AlarmsPage()),
+                ),
+            icon: const Icon(Icons.alarm),
           ),
           IconButton(
             tooltip: '运行指标',

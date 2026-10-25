@@ -555,4 +555,56 @@ class OutputApi {
       throw ApiException.fromDioException(e);
     }
   }
+
+  // ---------- 交叉淡化 / ReplayGain ----------
+
+  Future<CrossfadeSetting> getCrossfadeSetting() async {
+    try {
+      final res = await dio.get<Map<String, dynamic>>(
+        '${AppConfig.apiPrefix}/settings/crossfade',
+      );
+      return CrossfadeSetting.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<CrossfadeSetting> updateCrossfadeSetting(
+    CrossfadeSetting setting,
+  ) async {
+    try {
+      final res = await dio.put<Map<String, dynamic>>(
+        '${AppConfig.apiPrefix}/settings/crossfade',
+        data: setting.toJson(),
+      );
+      return CrossfadeSetting.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<ReplayGainSetting> getReplayGainSetting() async {
+    try {
+      final res = await dio.get<Map<String, dynamic>>(
+        '${AppConfig.apiPrefix}/settings/replaygain',
+      );
+      return ReplayGainSetting.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<ReplayGainSetting> updateReplayGainSetting(
+    ReplayGainSetting setting,
+  ) async {
+    try {
+      final res = await dio.put<Map<String, dynamic>>(
+        '${AppConfig.apiPrefix}/settings/replaygain',
+        data: setting.toJson(),
+      );
+      return ReplayGainSetting.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }

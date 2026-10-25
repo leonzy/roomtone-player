@@ -886,3 +886,61 @@ class DiscoveryResult {
             const <String>[],
       );
 }
+
+/// 交叉淡化配置（GET/PUT /settings/crossfade）。
+///
+/// 开启后交界处用等功率混合，**放弃 gapless 接续**（服务端单解码源下只能
+/// 二选一）；默认关闭，行为与没有这个功能时一致。
+class CrossfadeSetting {
+  const CrossfadeSetting({this.enabled = false, this.seconds = 3});
+
+  final bool enabled;
+
+  /// 淡化时长，0.5–12 秒。enabled=false 时后端忽略。
+  final double seconds;
+
+  factory CrossfadeSetting.fromJson(Map<String, dynamic> json) =>
+      CrossfadeSetting(
+        enabled: json['enabled'] as bool? ?? false,
+        seconds: (json['seconds'] as num?)?.toDouble() ?? 3,
+      );
+
+  Map<String, dynamic> toJson() => {'enabled': enabled, 'seconds': seconds};
+
+  CrossfadeSetting copyWith({bool? enabled, double? seconds}) =>
+      CrossfadeSetting(
+        enabled: enabled ?? this.enabled,
+        seconds: seconds ?? this.seconds,
+      );
+}
+
+/// ReplayGain 响度均衡配置（GET/PUT /settings/replaygain）。
+class ReplayGainSetting {
+  const ReplayGainSetting({
+    this.mode = 'off',
+    this.preventClipping = true,
+  });
+
+  /// `off` / `track` / `album`。
+  final String mode;
+
+  /// 按 peak 标签限制正增益，避免削波。
+  final bool preventClipping;
+
+  factory ReplayGainSetting.fromJson(Map<String, dynamic> json) =>
+      ReplayGainSetting(
+        mode: json['mode'] as String? ?? 'off',
+        preventClipping: json['prevent_clipping'] as bool? ?? true,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'mode': mode,
+    'prevent_clipping': preventClipping,
+  };
+
+  ReplayGainSetting copyWith({String? mode, bool? preventClipping}) =>
+      ReplayGainSetting(
+        mode: mode ?? this.mode,
+        preventClipping: preventClipping ?? this.preventClipping,
+      );
+}
