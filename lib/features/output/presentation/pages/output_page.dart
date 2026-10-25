@@ -7,6 +7,7 @@ import '../providers/output_provider.dart';
 import '../widgets/power_toggle.dart';
 import 'eq_sheet.dart';
 import 'group_editor.dart';
+import 'metrics_sheet.dart';
 import 'party_sheet.dart';
 import 'transfer_sheet.dart';
 
@@ -162,6 +163,11 @@ class _OutputPageState extends ConsumerState<OutputPage> {
             tooltip: '扫描音箱',
             onPressed: state.busy ? null : _discover,
             icon: const Icon(Icons.wifi_find_outlined),
+          ),
+          IconButton(
+            tooltip: '运行指标',
+            onPressed: () => showMetricsSheet(context),
+            icon: const Icon(Icons.monitor_heart_outlined),
           ),
           IconButton(
             tooltip: '刷新',
