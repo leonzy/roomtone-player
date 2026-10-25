@@ -18,6 +18,7 @@ import '../../features/settings/presentation/servers_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/jsplugin/presentation/widgets/plugin_registry.dart';
 import '../../features/jsplugin/presentation/pages/github_discovery_page.dart';
+import '../../features/output/presentation/pages/output_page.dart';
 import '../../features/settings/presentation/duplicate_check_page.dart';
 import '../../features/settings/presentation/shortcut_settings_page.dart';
 import '../../features/settings/presentation/client_download_page.dart';
@@ -50,6 +51,7 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String servers = '/settings/servers';
   static const String duplicateCheck = '/settings/duplicate-check';
+  static const String output = '/settings/output';
   static const String shortcuts = '/settings/shortcuts';
   static const String clientDownload = '/settings/download';
   static const String pluginRegistry = '/settings/plugin-registry';
@@ -290,6 +292,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.duplicateCheck,
             builder: (context, state) => const DuplicateCheckPage(),
+          ),
+
+          // 播放输出（音箱 / 同步组 / 派对 / EQ / 指标）
+          GoRoute(
+            path: AppRoutes.output,
+            builder: (context, state) => const OutputPage(),
           ),
 
           // 键盘快捷键（仅桌面从设置进入）

@@ -376,6 +376,14 @@ class _SettingsCategoryContentState
         icon: Icons.play_circle_outlined,
         children: [
           ListTile(
+            leading: const Icon(Icons.speaker_group_outlined),
+            title: Text(l10n.settingsOutputTitle),
+            subtitle: Text(l10n.settingsOutputSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.output),
+          ),
+          const Divider(height: 1),
+          ListTile(
             leading: const Icon(Icons.high_quality_outlined),
             title: Text(l10n.settingsQualityTitle),
             subtitle: Text(labels[quality] ?? l10n.settingsQualityOriginal),

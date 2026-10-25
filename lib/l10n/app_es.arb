@@ -2297,6 +2297,8 @@
   "settingsExportPlaylistSubtitle": "Respalda todos los datos de las listas en un archivo JSON",
   "settingsImportPlaylistTitle": "Importar listas de reproducción",
   "settingsImportPlaylistSubtitle": "Restaura los datos de las listas desde un archivo JSON de respaldo",
+  "settingsOutputTitle": "Salida de audio",
+  "settingsOutputSubtitle": "Altavoces, grupos sincronizados, fiesta y ecualizador",
   "settingsDownloadAppTitle": "Descargar la app",
   "settingsDownloadAppSubtitle": "Consigue el cliente nativo móvil / de escritorio con reproducción en segundo plano, caché y más",
   "settingsWebDebugConsoleTitle": "Consola de depuración",

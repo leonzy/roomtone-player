@@ -2367,6 +2367,8 @@
   "settingsExportPlaylistSubtitle": "将所有歌单数据备份为 JSON 文件",
   "settingsImportPlaylistTitle": "导入歌单",
   "settingsImportPlaylistSubtitle": "从 JSON 备份文件还原歌单数据",
+  "settingsOutputTitle": "播放输出",
+  "settingsOutputSubtitle": "音箱、同步组、派对与均衡器",
   "settingsDownloadAppTitle": "下载客户端 App",
   "settingsDownloadAppSubtitle": "获取手机 / 桌面原生客户端，支持后台播放、缓存等",
   "settingsWebDebugConsoleTitle": "调试控制台",

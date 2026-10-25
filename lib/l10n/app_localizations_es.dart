@@ -3988,6 +3988,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Restaura los datos de las listas desde un archivo JSON de respaldo';
 
   @override
+  String get settingsOutputTitle => 'Salida de audio';
+
+  @override
+  String get settingsOutputSubtitle =>
+      'Altavoces, grupos sincronizados, fiesta y ecualizador';
+
+  @override
   String get settingsDownloadAppTitle => 'Descargar la app';
 
   @override

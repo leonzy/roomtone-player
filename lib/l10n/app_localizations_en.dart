@@ -3932,6 +3932,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Restore playlist data from a JSON backup file';
 
   @override
+  String get settingsOutputTitle => 'Audio output';
+
+  @override
+  String get settingsOutputSubtitle =>
+      'Speakers, sync groups, party and equalizer';
+
+  @override
   String get settingsDownloadAppTitle => 'Download the app';
 
   @override

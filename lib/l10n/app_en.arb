@@ -2261,6 +2261,8 @@
   "settingsExportPlaylistSubtitle": "Back up all playlist data to a JSON file",
   "settingsImportPlaylistTitle": "Import playlists",
   "settingsImportPlaylistSubtitle": "Restore playlist data from a JSON backup file",
+  "settingsOutputTitle": "Audio output",
+  "settingsOutputSubtitle": "Speakers, sync groups, party and equalizer",
   "settingsDownloadAppTitle": "Download the app",
   "settingsDownloadAppSubtitle": "Get the mobile / desktop native client with background playback, caching and more",
   "settingsWebDebugConsoleTitle": "Debug Console",

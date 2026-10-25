@@ -3756,6 +3756,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsImportPlaylistSubtitle => '从 JSON 备份文件还原歌单数据';
 
   @override
+  String get settingsOutputTitle => '播放输出';
+
+  @override
+  String get settingsOutputSubtitle => '音箱、同步组、派对与均衡器';
+
+  @override
   String get settingsDownloadAppTitle => '下载客户端 App';
 
   @override

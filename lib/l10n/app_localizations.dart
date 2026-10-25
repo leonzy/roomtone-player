@@ -6831,6 +6831,18 @@ abstract class AppLocalizations {
   /// **'从 JSON 备份文件还原歌单数据'**
   String get settingsImportPlaylistSubtitle;
 
+  /// No description provided for @settingsOutputTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放输出'**
+  String get settingsOutputTitle;
+
+  /// No description provided for @settingsOutputSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'音箱、同步组、派对与均衡器'**
+  String get settingsOutputSubtitle;
+
   /// No description provided for @settingsDownloadAppTitle.
   ///
   /// In zh, this message translates to:
