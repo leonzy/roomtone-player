@@ -30,10 +30,15 @@ class PowerToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final on = !device.standby;
-    final disabled = busy || !device.online;
+    final disabled = busy || !device.online || exactDisabled;
 
     return Tooltip(
-      message: device.standby ? '已待机：服务端不向它推流，不代表设备断电' : '待机后从组内分发与同步校正中摘除',
+      message:
+          exactDisabled
+              ? '待机设备不在同步环里，先唤醒再操作'
+              : device.standby
+              ? '已待机：服务端不向它推流，不代表设备断电'
+              : '待机后从组内分发与同步校正中摘除',
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
