@@ -5,6 +5,7 @@ import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../domain/output_models.dart';
 import '../providers/output_provider.dart';
 import '../widgets/power_toggle.dart';
+import 'eq_sheet.dart';
 import 'group_editor.dart';
 import 'transfer_sheet.dart';
 
@@ -415,6 +416,8 @@ class _DeviceRow extends ConsumerWidget {
                     await _renameDevice(context, ref, device);
                   case 'reconnect':
                     await controller.reconnectPlayer(device.id);
+                  case 'eq':
+                    await showEqSheet(context, ref, device.id);
                   case 'remove':
                     await controller.removeMember(group.id, device.id);
                   case 'delete':
@@ -428,6 +431,7 @@ class _DeviceRow extends ConsumerWidget {
                       value: 'reconnect',
                       child: Text('重新连接'),
                     ),
+                    const PopupMenuItem(value: 'eq', child: Text('均衡器')),
                     if (!group.isSolo)
                       const PopupMenuItem(
                         value: 'remove',
