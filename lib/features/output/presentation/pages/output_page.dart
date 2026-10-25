@@ -6,6 +6,7 @@ import '../../domain/output_models.dart';
 import '../providers/output_provider.dart';
 import '../widgets/power_toggle.dart';
 import 'group_editor.dart';
+import 'transfer_sheet.dart';
 
 /// 播放输出面板（F0）：设备列表 + 组归属 + 待机/音量/发现。
 ///
@@ -241,6 +242,15 @@ class _OutputPageState extends ConsumerState<OutputPage> {
                           label: Text('起播对齐'),
                           visualDensity: VisualDensity.compact,
                         ),
+                      ),
+                    if (group.status.isActive)
+                      IconButton(
+                        tooltip: '转移播放',
+                        onPressed:
+                            state.busy
+                                ? null
+                                : () => showTransferSheet(context, ref, group),
+                        icon: const Icon(Icons.multiple_stop),
                       ),
                     if (!group.isSolo)
                       IconButton(
