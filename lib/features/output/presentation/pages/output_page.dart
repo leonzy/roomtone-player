@@ -5,6 +5,7 @@ import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../domain/output_models.dart';
 import '../providers/output_provider.dart';
 import '../widgets/power_toggle.dart';
+import 'group_editor.dart';
 
 /// 播放输出面板（F0）：设备列表 + 组归属 + 待机/音量/发现。
 ///
@@ -140,6 +141,12 @@ class _OutputPageState extends ConsumerState<OutputPage> {
         title: const Text('播放输出'),
         actions: [
           IconButton(
+            tooltip: '新建同步组',
+            onPressed:
+                state.busy ? null : () => showCreateGroupSheet(context, ref),
+            icon: const Icon(Icons.speaker_group_outlined),
+          ),
+          IconButton(
             tooltip: '扫描音箱',
             onPressed: state.busy ? null : _discover,
             icon: const Icon(Icons.wifi_find_outlined),
@@ -255,7 +262,12 @@ class _OutputPageState extends ConsumerState<OutputPage> {
               ),
               const Divider(height: 1),
               for (final m in group.members)
-                _DeviceRow(playerId: m.playerId, group: group, state: state),
+                _DeviceRow(
+                  playerId: m.playerId,
+                  group: group,
+                  state: state,
+                  onTap: () => showMemberSheet(context, ref, group, m.playerId),
+                ),
             ],
           ),
         ),
@@ -295,11 +307,15 @@ class _DeviceRow extends ConsumerWidget {
     required this.playerId,
     required this.group,
     required this.state,
+    required this.onTap,
   });
 
   final String playerId;
   final OutputGroup group;
   final OutputState state;
+
+  /// 点行打开成员参数（延迟补偿 / 音量偏移 / 主控 / 移出）。
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -315,6 +331,7 @@ class _DeviceRow extends ConsumerWidget {
 
     return ListTile(
       dense: true,
+      onTap: onTap,
       leading: Icon(switch (device?.kind) {
         OutputKind.raop => Icons.airplay,
         OutputKind.dlna => Icons.cast,
