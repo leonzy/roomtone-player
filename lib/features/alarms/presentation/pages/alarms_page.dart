@@ -122,11 +122,13 @@ class _AlarmsPageState extends ConsumerState<AlarmsPage> {
                         targetLabel: _targetLabel(output, alarm.targetId),
                         busy: state.busy,
                         onToggle:
-                            (v) => controller.toggle(alarm, v).then(
-                              (_) => _toast(
-                                ref.read(alarmControllerProvider).error,
-                              ),
-                            ),
+                            (v) => controller
+                                .toggle(alarm, v)
+                                .then(
+                                  (_) => _toast(
+                                    ref.read(alarmControllerProvider).error,
+                                  ),
+                                ),
                         onTest:
                             () => controller.trigger(alarm.id).then((_) {
                               final s = ref.read(alarmControllerProvider);
@@ -247,8 +249,7 @@ class _AlarmEditorDialog extends ConsumerStatefulWidget {
   final String? alarmId;
 
   @override
-  ConsumerState<_AlarmEditorDialog> createState() =>
-      _AlarmEditorDialogState();
+  ConsumerState<_AlarmEditorDialog> createState() => _AlarmEditorDialogState();
 }
 
 class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
@@ -292,9 +293,7 @@ class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
     if (ok) {
       Navigator.of(context).pop(true);
     } else {
-      setState(
-        () => _error = ref.read(alarmControllerProvider).error,
-      );
+      setState(() => _error = ref.read(alarmControllerProvider).error);
     }
   }
 
@@ -304,7 +303,7 @@ class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
     final playlists =
         ref
             .watch(playlistListProvider(const PlaylistListQuery()))
-            .valueOrNull
+            .value
             ?.items ??
         const <Playlist>[];
     final targets = <String, String>{};
@@ -347,9 +346,13 @@ class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
                       selected: AlarmDays.has(_draft.daysMask, i),
                       onSelected:
                           (_) => setState(
-                            () => _draft = _draft.copyWith(
-                              daysMask: AlarmDays.toggle(_draft.daysMask, i),
-                            ),
+                            () =>
+                                _draft = _draft.copyWith(
+                                  daysMask: AlarmDays.toggle(
+                                    _draft.daysMask,
+                                    i,
+                                  ),
+                                ),
                           ),
                     ),
                 ],
@@ -404,9 +407,7 @@ class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
                       label: '${_draft.volume}',
                       onChanged:
                           (v) => setState(
-                            () => _draft = _draft.copyWith(
-                              volume: v.round(),
-                            ),
+                            () => _draft = _draft.copyWith(volume: v.round()),
                           ),
                     ),
                   ),
@@ -418,15 +419,20 @@ class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
                   const Text('渐强'),
                   Expanded(
                     child: Slider(
-                      value: _draft.fadeSeconds.toDouble().clamp(0, 120).toDouble(),
+                      value:
+                          _draft.fadeSeconds
+                              .toDouble()
+                              .clamp(0, 120)
+                              .toDouble(),
                       max: 120,
                       divisions: 24,
                       label: '${_draft.fadeSeconds}s',
                       onChanged:
                           (v) => setState(
-                            () => _draft = _draft.copyWith(
-                              fadeSeconds: v.round(),
-                            ),
+                            () =>
+                                _draft = _draft.copyWith(
+                                  fadeSeconds: v.round(),
+                                ),
                           ),
                     ),
                   ),
@@ -478,10 +484,7 @@ class _Banner extends StatelessWidget {
     child: Row(
       children: [
         Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
-        IconButton(
-          onPressed: onClose,
-          icon: const Icon(Icons.close, size: 18),
-        ),
+        IconButton(onPressed: onClose, icon: const Icon(Icons.close, size: 18)),
       ],
     ),
   );
