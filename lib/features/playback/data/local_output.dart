@@ -445,14 +445,16 @@ class LocalOutput with WidgetsBindingObserver {
   /// 停止心跳、发送 unregister_player 并释放资源。
   Future<void> dispose() async {
     if (_disposed) return;
-    await _unregister();
-    _disposed = true;
+    // 先同步取消定时器再 await：否则 widget 测试在 dispose 后立刻检查
+    // pending timer 会报 “A Timer is still pending”。
     _playToken++;
     _reportTimer?.cancel();
     _reportTimer = null;
+    _transport?.connected.removeListener(_onConnectedChanged);
+    await _unregister();
+    _disposed = true;
     await _messageSubscription?.cancel();
     _messageSubscription = null;
-    _transport?.connected.removeListener(_onConnectedChanged);
     if (_lifecycleObserved) {
       WidgetsBinding.instance.removeObserver(this);
       _lifecycleObserved = false;

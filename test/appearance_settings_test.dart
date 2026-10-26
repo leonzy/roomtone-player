@@ -11,6 +11,7 @@ import 'package:songloft_flutter/features/settings/data/theme_pack_api.dart';
 import 'package:songloft_flutter/features/settings/presentation/providers/appearance_preferences_provider.dart';
 import 'package:songloft_flutter/features/settings/presentation/providers/theme_pack_provider.dart';
 import 'package:songloft_flutter/features/settings/presentation/widgets/appearance_accessibility_settings.dart';
+import 'package:songloft_flutter/features/playback/presentation/providers/playback_socket_provider.dart';
 import 'package:songloft_flutter/main.dart';
 
 class _NoThemePack extends ActiveThemePackNotifier {
@@ -60,6 +61,8 @@ void main() {
           overrides: [
             routerProvider.overrideWithValue(router),
             activeThemePackProvider.overrideWith(_NoThemePack.new),
+            // 不启动真实 WS / 心跳，否则测试结束时有 pending timer。
+            playbackBackgroundEnabledProvider.overrideWithValue(false),
           ],
         );
         addTearDown(container.dispose);

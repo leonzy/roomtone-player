@@ -395,6 +395,9 @@ class PlaybackSocket {
   }
 
   Future<void> _waitBackoff() {
+    // dispose 后不再新建定时器：连接失败可能晚于 dispose 返回，
+    // 否则 widget 测试会报 “A Timer is still pending”。
+    if (_disposed) return Future<void>.value();
     final index = (_failures - 1).clamp(0, backoffSchedule.length - 1).toInt();
     final completer = Completer<void>();
     _backoffCompleter = completer;

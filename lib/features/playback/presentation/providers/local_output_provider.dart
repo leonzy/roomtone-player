@@ -28,7 +28,9 @@ final localOutputProvider = Provider<LocalOutput>((ref) {
     unawaited(output.setFocusedGroup(next));
   }, fireImmediately: true);
 
-  Future.microtask(output.start);
+  if (ref.watch(playbackBackgroundEnabledProvider)) {
+    Future.microtask(output.start);
+  }
   ref.onDispose(() => unawaited(output.dispose()));
   return output;
 });
