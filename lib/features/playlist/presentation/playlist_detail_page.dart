@@ -24,6 +24,7 @@ import '../../../shared/widgets/scroll_to_top_fab.dart';
 import '../../../shared/widgets/song_picker_modal.dart';
 import '../../library/presentation/providers/songs_provider.dart';
 import '../../library/presentation/song_edit_page.dart';
+import '../../output/presentation/actions/enqueue_next.dart';
 import '../../player/domain/playback_context.dart';
 import '../../player/presentation/providers/player_provider.dart';
 import '../../player/presentation/widgets/play_history_sheet.dart';
@@ -1515,6 +1516,7 @@ class _PlaylistDetailPageState extends ConsumerState<PlaylistDetailPage>
           onRemove: () => _removeSong(playlist.id, song),
           onDeleteFromLibrary: () => _deleteSongFromLibrary(song),
           onEdit: () => _navigateToEditSong(song),
+          onEnqueueNext: () => enqueueNextToFocusedZone(context, ref, song.id),
           onLongPress: () {
             _enterSelectMode();
             _toggleSongSelection(song.id);

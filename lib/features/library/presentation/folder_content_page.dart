@@ -14,6 +14,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/manage_tags_modal.dart';
 import '../../../shared/mixins/song_list_actions.dart';
+import '../../output/presentation/actions/enqueue_next.dart';
 import '../../player/presentation/providers/player_provider.dart';
 import '../../playlist/presentation/providers/playlist_view_provider.dart';
 import 'providers/folder_provider.dart';
@@ -242,6 +243,8 @@ class _FolderContentPageState extends ConsumerState<FolderContentPage>
                     () => ref
                         .read(playerStateProvider.notifier)
                         .playSongNext(song),
+                onEnqueueNext:
+                    () => enqueueNextToFocusedZone(context, ref, song.id),
                 onAddToPlaylist:
                     () => AddToPlaylistModal.show(context, songIds: [song.id]),
                 onManageTags:

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,9 @@ import 'package:songloft_flutter/core/theme/widgets/liquid_glass_surface.dart';
 import 'package:songloft_flutter/features/dlna/domain/dlna_state.dart';
 import 'package:songloft_flutter/features/dlna/presentation/providers/dlna_provider.dart';
 import 'package:songloft_flutter/features/library/presentation/providers/favorite_provider.dart';
+import 'package:songloft_flutter/features/output/data/output_api.dart';
+import 'package:songloft_flutter/features/output/domain/output_models.dart';
+import 'package:songloft_flutter/features/output/presentation/providers/output_provider.dart';
 import 'package:songloft_flutter/features/player/domain/mini_player_controls.dart';
 import 'package:songloft_flutter/features/player/domain/player_state.dart';
 import 'package:songloft_flutter/features/player/presentation/providers/audio_track_provider.dart';
@@ -39,6 +43,17 @@ import 'package:songloft_flutter/shared/models/song.dart';
 /// 两端由 pill 轮廓顺着顶角弧线裁掉 —— 大屏档靠 `GlassSurface` 的 `ClipRRect`，
 /// 手机档靠另补的一层 `ClipRRect`；并且点按位置要按热区宽度线性映射成 seek 位置。
 void _noop() {}
+
+/// 播放条里的 ZoneButton 会读输出状态；测试里给空实现，避免真实网络请求。
+class _EmptyOutputApi extends OutputApi {
+  _EmptyOutputApi() : super(dio: Dio());
+
+  @override
+  Future<List<OutputDevice>> listPlayers() async => const <OutputDevice>[];
+
+  @override
+  Future<List<OutputGroup>> playback() async => const <OutputGroup>[];
+}
 
 /// 取像素的用例需要 `RepaintBoundary` 才能 `toImage()`；其余用例原样返回。
 Widget _probe(GlobalKey? key, Widget child) =>
@@ -104,6 +119,7 @@ void main() {
         runModeProvider.overrideWith(_FixedRunMode.new),
         songCacheProvider.overrideWith(_FixedSongCache.new),
         favoriteProvider.overrideWith(_FixedFavorite.new),
+        outputApiProvider.overrideWithValue(_EmptyOutputApi()),
       ],
     );
     addTearDown(container.dispose);

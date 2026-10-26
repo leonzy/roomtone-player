@@ -100,5 +100,6 @@ class AlarmController extends Notifier<AlarmState> {
   void clearNotice() => state = state.copyWith(notice: '');
 }
 
-final alarmControllerProvider =
-    NotifierProvider<AlarmController, AlarmState>(AlarmController.new);
+final alarmControllerProvider = NotifierProvider<AlarmController, AlarmState>(
+  AlarmController.new,
+);

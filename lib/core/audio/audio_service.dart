@@ -693,6 +693,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     String? quality,
     int? audioTrack,
     bool normalize = false,
+    bool autoPlay = true,
   }) async {
     // 确保 stream listeners 已建立；停止或新切歌使本次异步加载失效。
     final generation = ++_loadGeneration;
@@ -973,17 +974,23 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
       await _setAudioSourceWithGuard(source, song);
       if (!_isCurrentLoad(generation)) return;
 
-      debugPrint('[Player] SongloftAudioHandler: starting playback');
-      // 注意：just_audio 的 play() Future 在播放停止时才完成，不能 await，否则会阻塞调用链
-      // 使用 fire-and-forget 模式，播放状态通过 playbackEventStream.pipe() 自动同步
-      unawaited(
-        _player.play().catchError((e) {
-          debugPrint('[Player] SongloftAudioHandler: play() failed: $e');
-        }),
-      );
-      debugPrint(
-        '[Player] SongloftAudioHandler: playback triggered (non-blocking)',
-      );
+      if (autoPlay) {
+        debugPrint('[Player] SongloftAudioHandler: starting playback');
+        // 注意：just_audio 的 play() Future 在播放停止时才完成，不能 await，否则会阻塞调用链
+        // 使用 fire-and-forget 模式，播放状态通过 playbackEventStream.pipe() 自动同步
+        unawaited(
+          _player.play().catchError((e) {
+            debugPrint('[Player] SongloftAudioHandler: play() failed: $e');
+          }),
+        );
+        debugPrint(
+          '[Player] SongloftAudioHandler: playback triggered (non-blocking)',
+        );
+      } else {
+        debugPrint(
+          '[Player] SongloftAudioHandler: source loaded, waiting for play command',
+        );
+      }
       // 不再需要手动调用 _broadcastState()，pipe() 会自动同步
     } catch (e) {
       if (!_isCurrentLoad(generation)) return;

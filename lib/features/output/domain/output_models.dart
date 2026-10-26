@@ -52,6 +52,80 @@ enum SyncTier {
   String get label => this == SyncTier.exact ? '精确同步' : '起播对齐';
 }
 
+/// 信号路径等级：决定区域行三色指示点。
+///
+/// 后端 `internal/player/signal_path.go` 的取值；未知值返回 null，避免未来
+/// 新增等级时被误显示成某一种颜色。
+enum SignalPathKind {
+  lossless,
+  enhanced,
+  lossy;
+
+  static SignalPathKind? parse(String? raw) {
+    switch (raw) {
+      case 'lossless':
+        return SignalPathKind.lossless;
+      case 'enhanced':
+        return SignalPathKind.enhanced;
+      case 'lossy':
+        return SignalPathKind.lossy;
+      default:
+        return null;
+    }
+  }
+
+  String get label => switch (this) {
+    SignalPathKind.lossless => '无损直通',
+    SignalPathKind.enhanced => '经 DSP',
+    SignalPathKind.lossy => '有损转码',
+  };
+}
+
+/// 信号链路中的一段（后端固定五段：源 / 解码 / DSP / 输出 / 设备）。
+class SignalStage {
+  const SignalStage({required this.name, required this.detail});
+
+  final String name;
+  final String detail;
+
+  factory SignalStage.fromJson(Map<String, dynamic> json) => SignalStage(
+    name: json['name'] is String ? json['name'] as String : '',
+    detail: json['detail'] is String ? json['detail'] as String : '',
+  );
+}
+
+/// 区域信号路径（GET /playback 的 `signal_path`）。
+///
+/// 只读诊断，不参与播放控制。旧服务端没有该字段时
+/// [OutputGroup.signalPath] 为 null，UI 必须隐藏指示点。
+class SignalPath {
+  const SignalPath({required this.kind, this.stages = const <SignalStage>[]});
+
+  final SignalPathKind kind;
+  final List<SignalStage> stages;
+
+  bool get isEmpty => stages.isEmpty;
+
+  /// 解析失败（字段缺失 / kind 未知 / 类型不对）返回 null，不抛异常。
+  static SignalPath? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final rawKind = json['kind'];
+    final kind = SignalPathKind.parse(rawKind is String ? rawKind : null);
+    if (kind == null) return null;
+
+    final stages = <SignalStage>[];
+    final rawStages = json['stages'];
+    if (rawStages is List) {
+      for (final raw in rawStages) {
+        if (raw is Map) {
+          stages.add(SignalStage.fromJson(Map<String, dynamic>.from(raw)));
+        }
+      }
+    }
+    return SignalPath(kind: kind, stages: stages);
+  }
+}
+
 /// 播放状态机取值（后端 transport.State）。
 class PlayState {
   static const idle = 'idle';
@@ -378,16 +452,21 @@ class OutputGroup {
   const OutputGroup({
     required this.id,
     required this.name,
+    this.icon = '',
     this.masterId = '',
     this.partyId = '',
     this.members = const <OutputMember>[],
     this.syncTier = SyncTier.exact,
     this.memberCaps = const <MemberCaps>[],
     this.status = const OutputStatus(),
+    this.signalPath,
   });
 
   final String id;
   final String name;
+
+  /// 区域图标 key（白名单见后端 manager.go），空串表示客户端默认图标。
+  final String icon;
   final String masterId;
   final String partyId;
   final List<OutputMember> members;
@@ -396,6 +475,9 @@ class OutputGroup {
   final SyncTier syncTier;
   final List<MemberCaps> memberCaps;
   final OutputStatus status;
+
+  /// 只读信号链路诊断；旧服务端没有 `signal_path` 时为 null。
+  final SignalPath? signalPath;
 
   bool get isSolo => members.length <= 1;
   bool get isPlaying => status.isPlaying;
@@ -408,6 +490,7 @@ class OutputGroup {
   factory OutputGroup.fromJson(Map<String, dynamic> json) => OutputGroup(
     id: json['id'] as String? ?? '',
     name: json['name'] as String? ?? '',
+    icon: json['icon'] as String? ?? '',
     masterId: json['master_id'] as String? ?? '',
     partyId: json['party_id'] as String? ?? '',
     members:
@@ -422,6 +505,7 @@ class OutputGroup {
             .toList() ??
         const <MemberCaps>[],
     status: OutputStatus.fromJson(json['status'] as Map<String, dynamic>?),
+    signalPath: SignalPath.fromJson(json['signal_path']),
   );
 }
 
@@ -916,10 +1000,7 @@ class CrossfadeSetting {
 
 /// ReplayGain 响度均衡配置（GET/PUT /settings/replaygain）。
 class ReplayGainSetting {
-  const ReplayGainSetting({
-    this.mode = 'off',
-    this.preventClipping = true,
-  });
+  const ReplayGainSetting({this.mode = 'off', this.preventClipping = true});
 
   /// `off` / `track` / `album`。
   final String mode;

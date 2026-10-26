@@ -167,8 +167,7 @@ class _PlaybackTuningSheetState extends ConsumerState<PlaybackTuningSheet> {
               onChanged:
                   _saving
                       ? null
-                      : (v) =>
-                          _saveCrossfade(crossfade.copyWith(enabled: v)),
+                      : (v) => _saveCrossfade(crossfade.copyWith(enabled: v)),
               title: const Text('两曲交界处淡入淡出'),
               subtitle: const Text('开启后不再无缝接续（gapless），交界处等功率混合'),
             ),
@@ -187,9 +186,8 @@ class _PlaybackTuningSheetState extends ConsumerState<PlaybackTuningSheet> {
                           _saving
                               ? null
                               : (v) => setState(
-                                () => _crossfade = crossfade.copyWith(
-                                  seconds: v,
-                                ),
+                                () =>
+                                    _crossfade = crossfade.copyWith(seconds: v),
                               ),
                       onChangeEnd:
                           _saving
@@ -232,8 +230,7 @@ class _PlaybackTuningSheetState extends ConsumerState<PlaybackTuningSheet> {
               onChanged:
                   _saving || rg.mode == 'off'
                       ? null
-                      : (v) =>
-                          _saveReplayGain(rg.copyWith(preventClipping: v)),
+                      : (v) => _saveReplayGain(rg.copyWith(preventClipping: v)),
               title: const Text('防削波'),
               subtitle: const Text('按 peak 标签限制正增益，宁可少提也不削波'),
             ),

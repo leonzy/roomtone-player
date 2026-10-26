@@ -48,6 +48,8 @@ import 'features/desktop_lyric/desktop_lyric_ipc.dart';
 import 'features/desktop_lyric/android_floating_lyric_controller.dart';
 import 'features/desktop_lyric/desktop_lyric_main.dart';
 import 'features/player/presentation/widgets/player_shortcut_scope.dart';
+import 'features/output/presentation/providers/zone_focus_provider.dart';
+import 'features/playback/presentation/providers/local_output_provider.dart';
 import 'features/settings/presentation/providers/settings_provider.dart';
 import 'features/settings/presentation/providers/appearance_preferences_provider.dart';
 import 'features/settings/presentation/providers/theme_pack_provider.dart';
@@ -524,6 +526,13 @@ class SongloftApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 启动即建立播放事件 WS 并注册本机为 local sink。
+    // 不能等到用户打开 EQ 面板才创建：那样 GET /players 里长期没有本机，
+    // 区域选择器只能显示本地哨兵，服务端也无法向本机下发播放指令。
+    ref.watch(localOutputProvider);
+    // 自动跟随开关常驻：它监听播放事件，不能等设置页打开才生效。
+    // 用 listen 而不是 watch，避免切换开关时重建整个 MaterialApp。
+    ref.listen(zoneAutoFollowProvider, (_, _) {});
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final appearance =

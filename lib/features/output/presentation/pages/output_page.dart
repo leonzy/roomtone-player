@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../domain/output_models.dart';
+import '../providers/zone_focus_provider.dart';
 import '../providers/output_provider.dart';
 import '../../../alarms/presentation/pages/alarms_page.dart';
+import '../widgets/group_volume.dart';
 import '../widgets/power_toggle.dart';
 import 'playback_tuning_sheet.dart';
 import 'eq_sheet.dart';
@@ -252,6 +254,7 @@ class _OutputPageState extends ConsumerState<OutputPage> {
   /// 免得用户以为那是自己配过的同步组。
   List<Widget> _buildGroups(OutputState state) {
     final controller = ref.read(outputControllerProvider.notifier);
+    final focusedGroupId = ref.watch(zoneFocusProvider);
     return [
       for (final group in state.groups)
         Card(
@@ -259,6 +262,9 @@ class _OutputPageState extends ConsumerState<OutputPage> {
           child: Column(
             children: [
               ListTile(
+                selected: focusedGroupId == group.id,
+                onTap:
+                    () => ref.read(zoneFocusProvider.notifier).focus(group.id),
                 leading: Icon(
                   group.isSolo ? Icons.speaker : Icons.speaker_group,
                 ),
@@ -275,6 +281,21 @@ class _OutputPageState extends ConsumerState<OutputPage> {
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
+                    IconButton(
+                      tooltip: '组音量',
+                      onPressed:
+                          state.busy
+                              ? null
+                              : () => showGroupVolumeSheet(
+                                context,
+                                group.id,
+                                title:
+                                    group.isSolo
+                                        ? '单机音量'
+                                        : '${group.name} · 组音量',
+                              ),
+                      icon: const Icon(Icons.volume_up_outlined),
+                    ),
                     if (group.status.isActive)
                       IconButton(
                         tooltip: '转移播放',

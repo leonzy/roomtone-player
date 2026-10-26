@@ -51,6 +51,14 @@ class OutputState {
   /// 最近一次扫描结果，供弹层展示"新增 / 跳过"明细。
   final DiscoveryResult? lastScan;
 
+  /// 按 id 取区域（组）。
+  OutputGroup? groupOf(String id) {
+    for (final g in groups) {
+      if (g.id == id) return g;
+    }
+    return null;
+  }
+
   /// 按 id 取设备；组里的成员 id 用它映射成名字与能力。
   OutputDevice? playerOf(String id) {
     for (final p in players) {
@@ -244,6 +252,44 @@ class OutputController extends Notifier<OutputState> {
   Future<bool> renamePlayer(String id, String name) =>
       _run(() => _api.updatePlayer(id, name: name), notice: '已重命名');
 
+  /// 本机被其他设备接管时的行为：pause（默认）/ follow。
+  Future<bool> setTakeover(String id, String takeover) => _run(
+    () => _api.updatePlayer(id, takeover: takeover),
+    notice: takeover == 'follow' ? '已改为静默跟随' : '已改为暂停本机',
+  );
+
+  /// 向组队列追加歌曲；position=next 表示“下一首播放”。
+  Future<OutputStatus?> enqueue(
+    String groupId,
+    List<int> songIds, {
+    String position = 'end',
+  }) async {
+    try {
+      final status = await _api.addToQueue(
+        groupId,
+        songIds,
+        position: position,
+      );
+      await refresh(silent: true);
+      return status;
+    } on ApiException catch (e) {
+      _set(state.copyWith(error: e.message));
+      return null;
+    }
+  }
+
+  /// 把歌曲插到当前曲之后（下一首播放）。
+  Future<OutputStatus?> enqueueNext(String groupId, List<int> songIds) async {
+    try {
+      final status = await _api.enqueueNext(groupId, songIds);
+      await refresh(silent: true);
+      return status;
+    } on ApiException catch (e) {
+      _set(state.copyWith(error: e.message));
+      return null;
+    }
+  }
+
   Future<bool> reconnectPlayer(String id) =>
       _run(() => _api.reconnectPlayer(id), notice: '已重新连接');
 
@@ -264,6 +310,47 @@ class OutputController extends Notifier<OutputState> {
 
   Future<bool> deleteGroup(String id) =>
       _run(() => _api.deleteGroup(id), notice: '已解散同步组');
+
+  /// 更新区域名称与图标（`PUT /groups/{id}`）。
+  Future<bool> renameGroup(
+    String id, {
+    required String name,
+    String icon = '',
+  }) =>
+      _run(() => _api.updateGroup(id, name: name, icon: icon), notice: '已更新区域');
+
+  /// 把 [fromGroupId] 的全部成员并入 [toGroupId]。
+  ///
+  /// 后端没有“合并组”端点，合并 = 逐个 `POST /groups/{to}/members`。
+  /// 逐个提交意味着中途失败会留下部分合并；这里不假装原子，错误原样上报。
+  Future<bool> mergeGroups({
+    required String fromGroupId,
+    required String toGroupId,
+  }) async {
+    if (state.busy) return false;
+    if (fromGroupId == toGroupId) return true;
+    final from = state.groupOf(fromGroupId);
+    final to = state.groupOf(toGroupId);
+    if (from == null || to == null) return false;
+
+    _set(state.copyWith(busy: true, error: '', notice: ''));
+    try {
+      final existing = to.memberIds.toSet();
+      for (final member in from.members) {
+        if (existing.contains(member.playerId)) continue;
+        await _api.addMember(toGroupId, member.playerId);
+      }
+      _set(state.copyWith(busy: false, notice: '已合并区域'));
+      await refresh(silent: true);
+      return true;
+    } on ApiException catch (e) {
+      _set(state.copyWith(busy: false, error: e.message));
+      return false;
+    } catch (e) {
+      _set(state.copyWith(busy: false, error: '$e'));
+      return false;
+    }
+  }
 
   Future<bool> setMaster(String groupId, String playerId) =>
       _run(() => _api.setMaster(groupId, playerId), notice: '已切换主控');
@@ -328,6 +415,28 @@ class OutputController extends Notifier<OutputState> {
       return v;
     } on ApiException catch (e) {
       _set(state.copyWith(busy: false, error: e.message));
+      return null;
+    }
+  }
+
+  /// 区域选择器里的行内音量：不占用全局 busy，避免拖动 A 区域时
+  /// 把 B 区域的提交挡掉。防抖由调用方（滑杆）负责。
+  Future<GroupVolume?> setZoneVolume(String groupId, int volume) async {
+    try {
+      final v = await _api.setGroupVolume(groupId, volume: volume);
+      if (v.failed.isNotEmpty) {
+        _set(
+          state.copyWith(
+            notice:
+                '${v.failed.length} 台设备音量下发失败：'
+                '${v.failed.map((m) => m.playerId).join('、')}',
+          ),
+        );
+      }
+      await refresh(silent: true);
+      return v;
+    } on ApiException catch (e) {
+      _set(state.copyWith(error: e.message));
       return null;
     }
   }

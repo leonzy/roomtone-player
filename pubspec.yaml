@@ -21,6 +21,8 @@ dependencies:
   go_router: ^17.1.0
   # HTTP
   dio: ^5.7.0
+  # 播放事件 WebSocket（ticket 鉴权 + 断线重连）
+  web_socket_channel: ^3.0.3
   # 音频播放
   just_audio: ^0.10.5
   just_audio_platform_interface: any  # SongloftMediaKitPlayer 实现 AudioPlayerPlatform

@@ -1238,6 +1238,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryPlayNext => 'Play next';
 
   @override
+  String get libraryPlayNextLocal => 'Play next on this device';
+
+  @override
   String get libraryPlay => 'Play';
 
   @override
@@ -1989,6 +1992,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get playerEqNotSupported =>
       'Equalizer is not supported on this platform';
+
+  @override
+  String get playerEqServerControlled =>
+      'EQ is applied by the server while it controls this device; local EQ is disabled';
 
   @override
   String get playerEqPresetFlat => 'Flat';

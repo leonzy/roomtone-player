@@ -14,6 +14,7 @@ import '../../../shared/widgets/add_to_playlist_modal.dart';
 import '../../../shared/widgets/delete_song_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_view.dart';
+import '../../output/presentation/actions/enqueue_next.dart';
 import '../../settings/data/settings_api.dart';
 import '../../settings/presentation/providers/settings_provider.dart';
 import '../../player/presentation/providers/player_provider.dart';
@@ -1170,6 +1171,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           onEdit: () => _navigateToEditSong(context, song),
           onPlayNext:
               () => ref.read(playerStateProvider.notifier).playSongNext(song),
+          onEnqueueNext: () => enqueueNextToFocusedZone(context, ref, song.id),
           onAddToPlaylist: () => _showAddToPlaylistDialog(context, [song.id]),
           onManageTags: () => ManageTagsModal.show(context, songIds: [song.id]),
         );
@@ -1324,6 +1326,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                             () => ref
                                 .read(playerStateProvider.notifier)
                                 .playSongNext(song),
+                        onEnqueueNext:
+                            () =>
+                                enqueueNextToFocusedZone(context, ref, song.id),
                         onAddToPlaylist:
                             () => _showAddToPlaylistDialog(context, [song.id]),
                         onManageTags:

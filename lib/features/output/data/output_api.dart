@@ -216,6 +216,26 @@ class OutputApi {
     }
   }
 
+  /// 更新区域名称与图标。
+  ///
+  /// name 去空白后必须为 1~40 个字符；icon 必须在后端白名单内，空串表示
+  /// 使用客户端默认图标。名称与图标存在服务端，换设备不丢。
+  Future<OutputGroup> updateGroup(
+    String id, {
+    required String name,
+    String icon = '',
+  }) async {
+    try {
+      final res = await dio.put<Map<String, dynamic>>(
+        '$_groupBase/$id',
+        data: {'name': name, 'icon': icon},
+      );
+      return OutputGroup.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// 解散组：成员各自回到单机组。
   Future<void> deleteGroup(String id) async {
     try {
@@ -364,6 +384,36 @@ class OutputApi {
       throw ApiException.fromDioException(e);
     }
   }
+
+  /// 向组队列追加歌曲。
+  ///
+  /// [position] 为 `end`（默认，追加到队尾）或 `next`（按传入顺序插到
+  /// 当前曲之后，即“下一首播放”）。服务端对未知值返回 400。
+  Future<OutputStatus> addToQueue(
+    String groupId,
+    List<int> songIds, {
+    String position = 'end',
+  }) async {
+    try {
+      final res = await dio.post<Map<String, dynamic>>(
+        '$_groupBase/$groupId/queue',
+        data: {
+          'song_ids': songIds,
+          if (position.isNotEmpty) 'position': position,
+        },
+      );
+      return OutputStatus.fromJson(res.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// 把歌曲插到当前曲之后（下一首播放）。
+  ///
+  /// 等价于 `addToQueue(position: 'next')`；队列为空时服务端从第一首
+  /// 开始（不自动播放）。
+  Future<OutputStatus> enqueueNext(String groupId, List<int> songIds) =>
+      addToQueue(groupId, songIds, position: 'next');
 
   /// 组传输控制。action: play / pause / stop / next / prev / seek / repeat / shuffle。
   Future<OutputStatus> transport(

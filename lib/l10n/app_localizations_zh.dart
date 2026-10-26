@@ -1199,6 +1199,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryPlayNext => '下一首播放';
 
   @override
+  String get libraryPlayNextLocal => '本机下一首播放';
+
+  @override
   String get libraryPlay => '播放';
 
   @override
@@ -1932,6 +1935,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get playerEqNotSupported => '当前平台暂不支持均衡器';
+
+  @override
+  String get playerEqServerControlled => '服务端接管本机输出期间，EQ 由服务端应用，本地 EQ 已暂时禁用';
 
   @override
   String get playerEqPresetFlat => '平坦';

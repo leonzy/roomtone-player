@@ -20,6 +20,7 @@ import 'lyrics_screen_awake.dart';
 import 'play_controls.dart';
 import 'popup_controls.dart';
 import '../../../dlna/presentation/widgets/cast_button.dart';
+import '../../../output/presentation/widgets/zone_button.dart';
 import 'progress_bar.dart';
 import 'equalizer_panel.dart';
 import '../utils/full_player_route.dart';
@@ -282,6 +283,9 @@ class _MobilePlayerState extends ConsumerState<MobilePlayer>
             color: topBarColor,
             tooltip: AppLocalizations.of(context).playerCollapse,
           ),
+          // 区域入口（窄顶栏只显示图标 + 状态点）
+          const ZoneButton(compact: true),
+          const SizedBox(width: 4),
           // 歌曲信息（专辑名）
           if (song?.album != null && song!.album!.isNotEmpty)
             Expanded(

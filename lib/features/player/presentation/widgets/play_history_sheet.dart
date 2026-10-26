@@ -7,6 +7,7 @@ import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../../../shared/widgets/browse_card.dart' show BrowseCardAction;
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../../shared/widgets/song_tile.dart';
+import '../../../output/presentation/actions/enqueue_next.dart';
 import '../../domain/play_history_entry.dart';
 import '../../domain/playback_context.dart';
 import '../providers/play_history_provider.dart';
@@ -211,6 +212,11 @@ class PlayHistorySheet extends ConsumerWidget {
           subtitleSuffix: _formatPlayedAt(entry.playedAt),
           onTap: () => _playFrom(context, ref, entry),
           menuActions: [
+            enqueueNextMenuAction(
+              context: context,
+              ref: ref,
+              songId: entry.song.id,
+            ),
             BrowseCardAction(
               value: 'delete_entry',
               icon: Icons.delete_outline_rounded,

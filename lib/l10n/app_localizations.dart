@@ -2229,6 +2229,12 @@ abstract class AppLocalizations {
   /// **'下一首播放'**
   String get libraryPlayNext;
 
+  /// No description provided for @libraryPlayNextLocal.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机下一首播放'**
+  String get libraryPlayNextLocal;
+
   /// No description provided for @libraryPlay.
   ///
   /// In zh, this message translates to:
@@ -3596,6 +3602,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'当前平台暂不支持均衡器'**
   String get playerEqNotSupported;
+
+  /// No description provided for @playerEqServerControlled.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务端接管本机输出期间，EQ 由服务端应用，本地 EQ 已暂时禁用'**
+  String get playerEqServerControlled;
 
   /// No description provided for @playerEqPresetFlat.
   ///

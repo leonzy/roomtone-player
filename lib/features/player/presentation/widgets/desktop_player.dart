@@ -21,6 +21,7 @@ import 'equalizer_panel.dart';
 import 'popup_controls.dart';
 import 'volume_control.dart';
 import '../../../dlna/presentation/widgets/cast_button.dart';
+import '../../../output/presentation/widgets/zone_button.dart';
 
 /// 桌面端底部播放器栏
 class DesktopPlayer extends ConsumerWidget {
@@ -62,6 +63,9 @@ class DesktopPlayer extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
+                  // 最左：区域入口（宽屏显示区域名，窄屏只留图标 + 状态点）
+                  ZoneButton(compact: MediaQuery.sizeOf(context).width < 1400),
+                  const SizedBox(width: 12),
                   // 左侧：歌曲信息
                   Expanded(flex: 3, child: _buildSongInfo(context, state)),
                   // 中间：播放控制

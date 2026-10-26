@@ -14,6 +14,7 @@ class PlaylistSongTile extends StatelessWidget {
   final VoidCallback onRemove;
   final VoidCallback? onDeleteFromLibrary;
   final VoidCallback? onEdit;
+  final VoidCallback? onEnqueueNext;
   final VoidCallback? onLongPress;
 
   /// 是否显示拖拽手柄（排序模式）
@@ -40,6 +41,7 @@ class PlaylistSongTile extends StatelessWidget {
     required this.onRemove,
     this.onDeleteFromLibrary,
     this.onEdit,
+    this.onEnqueueNext,
     this.onLongPress,
     this.showDragHandle = false,
     this.showCheckbox = false,
@@ -53,6 +55,13 @@ class PlaylistSongTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final actions = <BrowseCardAction>[
+      if (showTrailing && onEnqueueNext != null)
+        BrowseCardAction(
+          value: 'enqueue_next',
+          icon: Icons.queue_play_next,
+          label: l10n.libraryPlayNext,
+          onTap: onEnqueueNext!,
+        ),
       if (showTrailing && onEdit != null)
         BrowseCardAction(
           value: 'edit',

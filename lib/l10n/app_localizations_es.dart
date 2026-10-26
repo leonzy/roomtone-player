@@ -1254,6 +1254,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get libraryPlayNext => 'Reproducir a continuación';
 
   @override
+  String get libraryPlayNextLocal =>
+      'Reproducir a continuación en este dispositivo';
+
+  @override
   String get libraryPlay => 'Reproducir';
 
   @override
@@ -2014,6 +2018,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get playerEqNotSupported =>
       'El ecualizador no es compatible con esta plataforma';
+
+  @override
+  String get playerEqServerControlled =>
+      'El servidor aplica el EQ mientras controla este dispositivo; el EQ local está desactivado';
 
   @override
   String get playerEqPresetFlat => 'Plano';

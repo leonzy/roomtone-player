@@ -13,6 +13,7 @@ import '../../../shared/widgets/manage_tags_modal.dart';
 import '../../../shared/widgets/selection_action_button.dart';
 import '../../../shared/mixins/song_list_actions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../output/presentation/actions/enqueue_next.dart';
 import '../../player/domain/playback_context.dart';
 import '../../player/presentation/providers/player_provider.dart';
 import '../../player/presentation/widgets/play_history_sheet.dart';
@@ -400,6 +401,8 @@ class _CategorySongsPageState extends ConsumerState<CategorySongsPage>
                     () => ref
                         .read(playerStateProvider.notifier)
                         .playSongNext(song),
+                onEnqueueNext:
+                    () => enqueueNextToFocusedZone(context, ref, song.id),
                 onAddToPlaylist:
                     () => AddToPlaylistModal.show(context, songIds: [song.id]),
                 onManageTags:

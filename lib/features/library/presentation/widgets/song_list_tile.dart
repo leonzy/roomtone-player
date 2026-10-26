@@ -13,9 +13,9 @@ import '../../../../shared/widgets/scrolling_text.dart';
 import '../../../../shared/widgets/song_tile.dart';
 
 /// 桌面端「操作按钮」列宽度。tile 内的按钮区与列表表头占位需保持一致，
-/// 否则表头与行的操作列对不齐；宽度需容纳 7 个紧凑按钮
-/// （play/下一首播放/收藏/编辑/加歌单/管理标签/删除）。
-const double kDesktopActionsWidth = 240;
+/// 否则表头与行的操作列对不齐；宽度需容纳 8 个紧凑按钮
+/// （play/本机下一首/区域下一首/收藏/编辑/加歌单/管理标签/删除）。
+const double kDesktopActionsWidth = 270;
 
 /// 曲库歌曲列表项：窄屏复用通用 [SongTile]，宽屏为库特有的多列表格行。
 class SongListTile extends StatelessWidget {
@@ -32,6 +32,7 @@ class SongListTile extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onAddToPlaylist;
   final VoidCallback? onPlayNext;
+  final VoidCallback? onEnqueueNext;
   final VoidCallback? onManageTags;
 
   const SongListTile({
@@ -49,6 +50,7 @@ class SongListTile extends StatelessWidget {
     this.onEdit,
     this.onAddToPlaylist,
     this.onPlayNext,
+    this.onEnqueueNext,
     this.onManageTags,
   });
 
@@ -84,8 +86,15 @@ class SongListTile extends StatelessWidget {
                 BrowseCardAction(
                   value: 'play_next',
                   icon: Icons.playlist_play,
-                  label: l10n.libraryPlayNext,
+                  label: l10n.libraryPlayNextLocal,
                   onTap: onPlayNext!,
+                ),
+              if (onEnqueueNext != null)
+                BrowseCardAction(
+                  value: 'enqueue_next',
+                  icon: Icons.queue_play_next,
+                  label: l10n.libraryPlayNext,
+                  onTap: onEnqueueNext!,
                 ),
               if (onEdit != null)
                 BrowseCardAction(
@@ -341,8 +350,14 @@ class SongListTile extends StatelessWidget {
         if (onPlayNext != null)
           actionButton(
             icon: Icons.playlist_play,
-            tooltip: l10n.libraryPlayNext,
+            tooltip: l10n.libraryPlayNextLocal,
             onPressed: onPlayNext,
+          ),
+        if (onEnqueueNext != null)
+          actionButton(
+            icon: Icons.queue_play_next,
+            tooltip: l10n.libraryPlayNext,
+            onPressed: onEnqueueNext,
           ),
         FavoriteButton(songId: song.id, songType: song.type, size: 20),
         actionButton(

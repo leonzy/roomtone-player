@@ -13,6 +13,7 @@ import '../../domain/player_state.dart';
 import '../providers/mini_player_controls_provider.dart';
 import '../providers/player_provider.dart';
 import '../../../dlna/presentation/providers/dlna_provider.dart';
+import '../../../output/presentation/widgets/zone_button.dart';
 import '../utils/full_player_route.dart';
 import 'capsule_mini_player.dart';
 import 'play_controls.dart';
@@ -87,6 +88,10 @@ class MiniPlayer extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
+                        ZoneButton(
+                          compact: MediaQuery.sizeOf(context).width < 600,
+                        ),
+                        const SizedBox(width: 4),
                         _buildCover(context, song.coverUrl),
                         const SizedBox(width: 12),
                         Expanded(

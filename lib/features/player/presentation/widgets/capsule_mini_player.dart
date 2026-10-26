@@ -17,6 +17,7 @@ import '../../../../shared/widgets/favorite_button.dart';
 import '../../../../shared/widgets/scrolling_text.dart';
 import '../../../dlna/presentation/providers/dlna_provider.dart';
 import '../../../dlna/presentation/widgets/cast_button.dart';
+import '../../../output/presentation/widgets/zone_button.dart';
 import '../../../settings/presentation/providers/song_cache_provider.dart';
 import '../../domain/player_state.dart';
 import '../providers/mini_player_controls_provider.dart';
@@ -98,6 +99,12 @@ class CapsuleMiniPlayer extends ConsumerWidget {
                 final showTime = constraints.maxWidth >= tier.minWidthForTime;
                 return Row(
                   children: [
+                    // 胶囊行宽不足时优先保证标题与传输按钮；区域入口在
+                    // 标准播放条里始终可见，胶囊模式只在宽屏补上。
+                    if (constraints.maxWidth >= 620) ...[
+                      const ZoneButton(compact: true),
+                      const SizedBox(width: 8),
+                    ],
                     _buildCover(context, theme, song, tier),
                     const SizedBox(width: 12),
                     Expanded(

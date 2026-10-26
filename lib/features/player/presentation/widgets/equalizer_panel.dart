@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../playback/presentation/providers/local_output_provider.dart';
 import '../../domain/equalizer_setting.dart';
 import '../providers/equalizer_provider.dart';
 
@@ -40,28 +41,50 @@ class EqualizerPanel extends ConsumerWidget {
     final notifier = ref.read(equalizerProvider.notifier);
     final theme = Theme.of(context);
     final supported = notifier.isSupported;
+    final serverControlled = ref.watch(serverControlledProvider);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildHeader(context, setting, notifier, theme),
-        if (!supported)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              AppLocalizations.of(context).playerEqNotSupported,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    return ValueListenableBuilder<bool>(
+      valueListenable: serverControlled,
+      builder: (context, locked, _) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(context, setting, notifier, theme, locked: locked),
+            if (locked)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  AppLocalizations.of(context).playerEqServerControlled,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
               ),
-            ),
-          ),
-        if (supported) ...[
-          const SizedBox(height: 8),
-          _buildPresetSelector(context, setting, notifier, theme),
-          const SizedBox(height: 16),
-          _buildBands(context, setting, notifier, theme),
-        ],
-      ],
+            if (!supported)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  AppLocalizations.of(context).playerEqNotSupported,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            if (supported) ...[
+              const SizedBox(height: 8),
+              _buildPresetSelector(
+                context,
+                setting,
+                notifier,
+                theme,
+                locked: locked,
+              ),
+              const SizedBox(height: 16),
+              _buildBands(context, setting, notifier, theme, locked: locked),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -69,8 +92,9 @@ class EqualizerPanel extends ConsumerWidget {
     BuildContext context,
     EqualizerSetting setting,
     EqualizerNotifier notifier,
-    ThemeData theme,
-  ) {
+    ThemeData theme, {
+    required bool locked,
+  }) {
     return Row(
       children: [
         Icon(Icons.equalizer, color: theme.colorScheme.primary),
@@ -82,7 +106,8 @@ class EqualizerPanel extends ConsumerWidget {
         const Spacer(),
         Switch(
           value: setting.enabled,
-          onChanged: notifier.isSupported ? notifier.setEnabled : null,
+          onChanged:
+              notifier.isSupported && !locked ? notifier.setEnabled : null,
         ),
       ],
     );
@@ -92,8 +117,9 @@ class EqualizerPanel extends ConsumerWidget {
     BuildContext context,
     EqualizerSetting setting,
     EqualizerNotifier notifier,
-    ThemeData theme,
-  ) {
+    ThemeData theme, {
+    required bool locked,
+  }) {
     final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 36,
@@ -108,7 +134,9 @@ class EqualizerPanel extends ConsumerWidget {
                   label: Text(equalizerPresetLabel(l10n, key)),
                   selected: isSelected,
                   onSelected:
-                      key == 'custom' ? null : (_) => notifier.setPreset(key),
+                      key == 'custom' || locked
+                          ? null
+                          : (_) => notifier.setPreset(key),
                 ),
               );
             }).toList(),
@@ -120,8 +148,9 @@ class EqualizerPanel extends ConsumerWidget {
     BuildContext context,
     EqualizerSetting setting,
     EqualizerNotifier notifier,
-    ThemeData theme,
-  ) {
+    ThemeData theme, {
+    required bool locked,
+  }) {
     return SizedBox(
       height: 200,
       child: Row(
@@ -131,7 +160,7 @@ class EqualizerPanel extends ConsumerWidget {
             child: _BandSlider(
               index: index,
               gain: setting.bands[index],
-              enabled: setting.enabled,
+              enabled: setting.enabled && !locked,
               onChanged: (value) => notifier.setBandGain(index, value),
             ),
           );

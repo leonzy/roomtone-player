@@ -384,6 +384,14 @@ class _SettingsCategoryContentState
           ),
           const Divider(height: 1),
           ListTile(
+            leading: const Icon(Icons.computer_outlined),
+            title: const Text('本机'),
+            subtitle: const Text('被其他设备接管时：暂停 / 跟随'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.speakerSettings),
+          ),
+          const Divider(height: 1),
+          ListTile(
             leading: const Icon(Icons.high_quality_outlined),
             title: Text(l10n.settingsQualityTitle),
             subtitle: Text(labels[quality] ?? l10n.settingsQualityOriginal),

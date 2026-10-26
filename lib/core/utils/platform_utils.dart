@@ -48,6 +48,21 @@ class PlatformUtils {
     return true;
   }
 
+  /// 获取当前设备名（用于注册为 local 播放器时的显示名）。
+  ///
+  /// 优先用主机名；Web / 取不到主机名时退回平台名。不要用 IP 或型号：
+  /// 换网后 IP 会变，型号在多台同款设备上会重名。
+  static String get deviceName {
+    if (kIsWeb) return platformName;
+    try {
+      final host = Platform.localHostname.trim();
+      if (host.isNotEmpty) return host;
+    } catch (_) {
+      // 某些受限平台不允许读主机名，退回平台名。
+    }
+    return platformName;
+  }
+
   /// 获取当前平台名称
   static String get platformName {
     if (kIsWeb) return 'Web';

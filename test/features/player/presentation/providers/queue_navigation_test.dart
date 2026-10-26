@@ -61,6 +61,7 @@ class _Audio implements SongloftAudioHandler {
     String? quality,
     int? audioTrack,
     bool normalize = false,
+    bool autoPlay = true,
   }) async {
     attempted.add(song.id);
     if (failedIds.contains(song.id)) throw StateError('audio source failed');

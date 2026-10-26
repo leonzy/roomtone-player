@@ -99,6 +99,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
   int get _consecutiveFailures => _retryPolicy.consecutiveFailures;
   Song? _lastPlayedSong;
 
+  /// 当前播放状态快照。`state` 是 Notifier 的受保护成员，local sink
+  /// 适配器通过这个只读 getter 读取，避免跨类访问受保护字段。
+  PlayerState get currentState => state;
+
   // 播放状态持久化
   Timer? _saveDebounceTimer;
   Timer? _positionSaveTimer;
@@ -652,8 +656,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
     return false;
   }
 
-  /// 播放单曲（添加到播放列表并播放）
-  Future<void> playSong(Song song) async {
+  /// 播放单曲（添加到播放列表并播放）。
+  ///
+  /// [autoPlay] 为 false 时只加载音源并 seek，不自动起播；服务端接管
+  /// 本机输出时用它实现 load → play_at 的精确起播。
+  Future<void> playSong(Song song, {bool autoPlay = true}) async {
     debugPrint(
       '[Player] playSong: ${song.title} (id: ${song.id}, type: ${song.type})',
     );
@@ -667,7 +674,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (existingIndex >= 0) {
       // 已存在，直接跳转播放
       debugPrint('[Player] Song already in playlist at index $existingIndex');
-      await _playAtIndex(existingIndex);
+      await _playAtIndex(existingIndex, autoPlay: autoPlay);
     } else {
       // 添加到播放列表末尾并播放
       final previousQueue = PlayQueue(
@@ -685,7 +692,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       );
       _onQueueEdited(previousQueue);
       final gen = ++_playGeneration;
-      await _playCurrent(gen);
+      await _playCurrent(gen, autoPlay: autoPlay);
       if (gen == _playGeneration) {
         _savePlaybackState();
       }
@@ -977,6 +984,52 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioHandler.play();
       }
     }
+  }
+
+  /// 服务端接管：加载指定歌曲但不自动起播。
+  ///
+  /// 服务端随后会发 `play`（带 `play_at_ms`），由 [resumeForServer] 对齐起播。
+  Future<void> loadForServer(
+    int songId, {
+    Duration position = Duration.zero,
+  }) async {
+    final song = await ref.read(songsApiProvider).getSong(songId);
+    await playSong(song, autoPlay: false);
+    if (position > Duration.zero) await seek(position);
+  }
+
+  /// 服务端接管：暂停本机输出。
+  Future<void> pauseForServer() async {
+    if (!state.hasSong) return;
+    if (kIsWeb && _audioHandler.hlsVideoPrimaryMode) {
+      ref.read(webVideoPlaybackProvider.notifier).pause();
+      return;
+    }
+    await _audioHandler.pause();
+  }
+
+  /// 服务端接管：恢复本机输出；idle/completed 时重新加载当前歌曲。
+  Future<void> resumeForServer() async {
+    if (!state.hasSong) return;
+    if (kIsWeb && _audioHandler.hlsVideoPrimaryMode) {
+      ref.read(webVideoPlaybackProvider.notifier).play();
+      return;
+    }
+    final ps = _audioHandler.processingState;
+    if (ps == ja.ProcessingState.idle || ps == ja.ProcessingState.completed) {
+      final gen = ++_playGeneration;
+      await _playCurrent(gen);
+    } else {
+      await _audioHandler.play();
+    }
+  }
+
+  /// 服务端接管：停止本机输出（保留当前歌曲与进度）。
+  Future<void> stopForServer() async {
+    if (kIsWeb && _audioHandler.hlsVideoPrimaryMode) {
+      ref.read(webVideoPlaybackProvider.notifier).pause();
+    }
+    await _audioHandler.stop();
   }
 
   /// 播放下一首
@@ -2012,7 +2065,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   /// 播放指定索引
-  Future<void> _playAtIndex(int index) async {
+  Future<void> _playAtIndex(int index, {bool autoPlay = true}) async {
     if (index < 0 || index >= state.playlist.length) return;
 
     _playbackResumeState.clear();
@@ -2032,7 +2085,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     );
     _updateNotificationFavorite();
 
-    await _playCurrent(gen);
+    await _playCurrent(gen, autoPlay: autoPlay);
     if (gen != _playGeneration) return; // 已被新切歌取代，savePlaybackState 也跳过
     _savePlaybackState();
   }
@@ -2062,7 +2115,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   /// 播放当前歌曲（带自动重试）
-  Future<void> _playCurrent(int gen, {bool reconnectLive = false}) async {
+  Future<void> _playCurrent(
+    int gen, {
+    bool reconnectLive = false,
+    bool autoPlay = true,
+  }) async {
     if (_isSuperseded(gen, 'start')) return;
     final song = state.currentSong;
     if (song == null) {
@@ -2148,6 +2205,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
           song,
           quality: quality,
           normalize: normalizeOn,
+          autoPlay: autoPlay,
         );
         if (_isSuperseded(gen, 'after-playSong')) return;
         _playGenerationAtSource = gen;
@@ -2172,7 +2230,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
           // 回填播放来源（本地缓存 / 远端流串），供播放页「歌曲信息」展示。
           playbackSource: _audioHandler.lastPlaybackSource,
         );
-        _notifyPlayEvent(song.id, 'play', context: state.playbackContext);
+        if (autoPlay) {
+          _notifyPlayEvent(song.id, 'play', context: state.playbackContext);
+        }
 
         // Only the song restored from the previous app session may consume
         // the saved position. Explicit song and queue changes clear it first.

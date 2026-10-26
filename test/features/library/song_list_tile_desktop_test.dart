@@ -22,6 +22,7 @@ Future<void> _pump(
   WidgetTester tester,
   double width, {
   VoidCallback? onPlayNext,
+  VoidCallback? onEnqueueNext,
   VoidCallback? onPlay,
   Locale locale = const Locale('zh'),
   bool selectionMode = false,
@@ -46,6 +47,7 @@ Future<void> _pump(
                 onEdit: () {},
                 onTap: onPlay ?? () {},
                 onPlayNext: onPlayNext,
+                onEnqueueNext: onEnqueueNext,
                 isSelectionMode: selectionMode,
                 onDelete: () {},
                 onAddToPlaylist: () {},
@@ -69,15 +71,15 @@ void main() {
 
     // 编辑按钮（tooltip=编辑）应存在
     expect(find.byTooltip('编辑'), findsOneWidget);
-    expect(find.byTooltip('下一首播放'), findsOneWidget);
+    expect(find.byTooltip('本机下一首播放'), findsOneWidget);
 
     // 管理标签按钮应存在，且不能把删除按钮挤出操作列
     expect(find.byTooltip('管理标签'), findsOneWidget);
     expect(find.byTooltip('删除'), findsOneWidget);
   });
   for (final entry in [
-    (const Locale('zh'), '下一首播放'),
-    (const Locale('en'), 'Play next'),
+    (const Locale('zh'), '本机下一首播放'),
+    (const Locale('en'), 'Play next on this device'),
   ]) {
     testWidgets('桌面 ${entry.$1.languageCode} 下一首按钮只触发排队', (tester) async {
       int nextCalls = 0;
@@ -117,9 +119,15 @@ void main() {
     });
   }
 
+  testWidgets('桌面 600 宽度显示区域下一首按钮且无溢出', (tester) async {
+    await _pump(tester, 600, onPlayNext: () {}, onEnqueueNext: () {});
+    expect(tester.takeException(), isNull);
+    expect(find.byTooltip('下一首播放'), findsOneWidget);
+  });
+
   testWidgets('多选模式不显示下一首播放操作', (tester) async {
     await _pump(tester, 1000, onPlayNext: () {}, selectionMode: true);
-    expect(find.byTooltip('下一首播放'), findsNothing);
+    expect(find.byTooltip('本机下一首播放'), findsNothing);
     await _pump(tester, 390, onPlayNext: () {}, selectionMode: true);
     expect(find.byIcon(Icons.more_vert), findsNothing);
     expect(tester.takeException(), isNull);
