@@ -63,7 +63,11 @@ class _FakeAudio implements LocalAudio {
   bool hasSong = false;
 
   @override
+  int? songId;
+
+  @override
   Future<void> load(int songId, {required Duration position}) async {
+    this.songId = songId;
     loadedSongId = songId;
     loadedPosition = position;
     hasSong = true;

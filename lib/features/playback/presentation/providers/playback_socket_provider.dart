@@ -11,7 +11,10 @@ import '../../domain/playback_event.dart';
 ///
 /// 生产环境恒为 true；widget 测试里关掉，避免真实 WS 连接与心跳定时器
 /// 在测试结束后仍处于 pending 状态。
-final playbackBackgroundEnabledProvider = Provider<bool>((ref) => true);
+final playbackBackgroundEnabledProvider = Provider<bool>((ref) {
+  ref.keepAlive();
+  return true;
+});
 
 /// 全局唯一的播放事件 WebSocket。
 ///
@@ -19,6 +22,8 @@ final playbackBackgroundEnabledProvider = Provider<bool>((ref) => true);
 /// WS 地址由 [DioPlaybackConnector] 从 `AppConfig.resolvedBaseUrl` 推导。
 /// 一个连接接收全部区域的事件，消费方按 `group_id` 分发。
 final playbackSocketProvider = Provider<PlaybackSocket>((ref) {
+  // 常驻：被回收会断开 WS 并重建连接，期间所有事件丢失。
+  ref.keepAlive();
   final apiClient = ref.watch(apiClientProvider);
   final socket = PlaybackSocket(
     connector: DioPlaybackConnector(dio: apiClient.dio),

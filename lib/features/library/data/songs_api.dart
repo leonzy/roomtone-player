@@ -276,6 +276,19 @@ class SongsApi {
     return Song.fromJson(response.data!);
   }
 
+  /// 批量按 id 取歌曲（区域队列还原用）。
+  ///
+  /// 服务端按传入顺序返回，不存在的 id 直接跳过；返回数量可能少于请求数。
+  Future<List<Song>> getSongsByIds(List<int> ids) async {
+    if (ids.isEmpty) return const [];
+    final response = await dio.get<Map<String, dynamic>>(
+      '${AppConfig.apiPrefix}/songs/batch',
+      queryParameters: {'ids': ids.join(',')},
+    );
+    final raw = response.data?['songs'] as List<dynamic>? ?? const [];
+    return raw.map((e) => Song.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   /// 获取歌曲音频流列表（原伴唱双音轨切换用，songloft-org/songloft#298）。
   ///
   /// 后端用 ffprobe 探测，返回每条音频流的 audio-relative index、title、language、codec、

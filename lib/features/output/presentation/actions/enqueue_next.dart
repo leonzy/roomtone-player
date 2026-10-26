@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../../../shared/widgets/browse_card.dart' show BrowseCardAction;
+import '../../../playback/presentation/providers/local_output_provider.dart';
 import '../providers/output_provider.dart';
 import '../providers/zone_focus_provider.dart';
 import '../widgets/zone_display.dart';
@@ -12,10 +13,14 @@ import '../widgets/zone_display.dart';
 ///
 /// 焦点为空表示用户还没选区域；[kLocalZoneId] 是客户端哨兵，只有服务端
 /// 已经为本机建好真实组时才能发队列命令。返回 null 时调用方应提示先选区域。
-String? focusedRealGroupId(OutputState state, String? focusId) {
+String? focusedRealGroupId(
+  OutputState state,
+  String? focusId, {
+  String? localDeviceId,
+}) {
   if (focusId == null || focusId.isEmpty) return null;
   if (focusId != kLocalZoneId) return focusId;
-  final zone = resolveFocusedZone(state, focusId);
+  final zone = resolveFocusedZone(state, focusId, localDeviceId: localDeviceId);
   return zone != null && zone.isReal ? zone.id : null;
 }
 
@@ -30,6 +35,7 @@ Future<void> enqueueNextToFocusedZone(
   final groupId = focusedRealGroupId(
     ref.read(outputControllerProvider),
     ref.read(zoneFocusProvider),
+    localDeviceId: ref.read(localDeviceIdProvider),
   );
   if (groupId == null) {
     ResponsiveSnackBar.show(context, message: '请先选择播放区域');

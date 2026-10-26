@@ -127,6 +127,9 @@ class OutputController extends Notifier<OutputState> {
 
   @override
   OutputState build() {
+    // Riverpod 3 默认 auto-dispose：输出状态是 App 级单例，被回收会
+    // 重建轮询、清空区域列表，并让焦点解析短暂回退到本机（区域跳动）。
+    ref.keepAlive();
     _api = ref.watch(outputApiProvider);
     ref.onDispose(() {
       _disposed = true;

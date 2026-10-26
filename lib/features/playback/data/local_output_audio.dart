@@ -36,18 +36,24 @@ class PlayerNotifierLocalAudio implements LocalAudio {
   @override
   Future<void> stop() => _player.stopForServer();
 
+  // 上报必须用音频引擎的真实状态，不能用 UI 投影的区域状态：
+  // 切到远端区域后 `currentState.currentSong` 已经是那个区域的歌，
+  // 拿它上报会把远端区域的曲目写进本机所在区域。
   @override
-  Duration get position => _player.currentState.currentTime;
+  Duration get position => _player.loadedPosition;
 
   @override
   double get volume => _player.currentState.volume.toDouble();
 
   @override
-  bool get isPlaying => _player.currentState.isPlaying;
+  bool get isPlaying => _player.loadedIsPlaying;
 
   @override
   bool get isBuffering => _player.currentState.isBuffering;
 
   @override
-  bool get hasSong => _player.currentState.hasSong;
+  bool get hasSong => _player.loadedHasSong;
+
+  @override
+  int? get songId => _player.loadedSongId;
 }

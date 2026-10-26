@@ -33,6 +33,7 @@ class ZoneTransferNotifier extends Notifier<ZoneTransferState> {
 
   @override
   ZoneTransferState build() {
+    ref.keepAlive();
     ref.listen<AsyncValue<PlaybackEvent>>(playbackEventsProvider, (_, next) {
       final event = next.value;
       if (event == null || event.type != 'state') return;

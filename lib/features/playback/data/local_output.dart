@@ -109,6 +109,12 @@ abstract class LocalAudio {
   bool get isBuffering;
 
   bool get hasSong;
+
+  /// 当前播放曲目 id；没有曲目时为 null。
+  ///
+  /// 上报给服务端用于镜像组状态：客户端自己起播时服务端没有解码协程，
+  /// 只能靠这条字段知道区域在放什么。
+  int? get songId;
 }
 
 /// 心跳定时器工厂。
@@ -261,6 +267,7 @@ class LocalOutput with WidgetsBindingObserver {
   Map<String, dynamic> buildReportMessage() => <String, dynamic>{
     'type': 'report',
     'id': _deviceId ?? '',
+    'song_id': _audio.songId ?? 0,
     'position_ms': _audio.position.inMilliseconds,
     'buffering': _audio.isBuffering,
     'volume': _audio.volume.round().clamp(0, 100),

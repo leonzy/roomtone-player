@@ -385,6 +385,26 @@ class OutputApi {
     }
   }
 
+  /// 整体替换组队列并定位到 [index]（不自动播放）。
+  ///
+  /// 客户端是队列的编辑者：选歌、拖拽、删除都在本地完成，改完把整条队列
+  /// 推给服务端，区域面板和别的客户端才能看到同一份队列。
+  Future<OutputStatus> replaceQueue(
+    String groupId,
+    List<int> songIds, {
+    int index = 0,
+  }) async {
+    try {
+      final res = await dio.put<Map<String, dynamic>>(
+        '$_groupBase/$groupId/queue',
+        data: {'song_ids': songIds, 'index': index},
+      );
+      return OutputStatus.fromJson(res.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// 向组队列追加歌曲。
   ///
   /// [position] 为 `end`（默认，追加到队尾）或 `next`（按传入顺序插到

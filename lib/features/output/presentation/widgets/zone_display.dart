@@ -75,7 +75,10 @@ class ZoneEntry {
 ///
 /// 本机永远在列表里（P9）：即使没有任何音箱、甚至本机还没注册成功，
 /// 也要给用户一个可聚焦的“本机”，而不是空白列表。
-List<ZoneEntry> buildZoneEntries(OutputState state) {
+List<ZoneEntry> buildZoneEntries(OutputState state, {String? localDeviceId}) {
+  // 「本机区域」= 成员里有**本机设备**，不是「成员里有 kind=local 的设备」：
+  // 别的客户端（手机 / 另一个浏览器）注册的也是 local，按 kind 判断会把
+  // 别人的区域当成自己的，在本机播别人的歌并污染本机所在区域的状态。
   final localPlayerIds = <String>{};
   for (final p in state.players) {
     if (p.kind == OutputKind.local) localPlayerIds.add(p.id);
@@ -84,7 +87,11 @@ List<ZoneEntry> buildZoneEntries(OutputState state) {
   final entries = <ZoneEntry>[];
   var hasLocalGroup = false;
   for (final group in state.groups) {
-    final isLocal = group.memberIds.any(localPlayerIds.contains);
+    final isLocal =
+        localDeviceId != null && localDeviceId.isNotEmpty
+            ? group.memberIds.contains(localDeviceId)
+            // 设备 id 还没读出来（启动瞬间）：退回旧判定，避免列表闪一下。
+            : group.memberIds.any(localPlayerIds.contains);
     if (isLocal) hasLocalGroup = true;
     entries.add(_entryFromGroup(group, state, isLocal: isLocal));
   }
@@ -112,8 +119,12 @@ List<ZoneEntry> buildZoneEntries(OutputState state) {
 }
 
 /// 解析当前焦点区域；焦点失效时回退到含本机的区域，再回退到第一个区域。
-ZoneEntry? resolveFocusedZone(OutputState state, String? focusId) {
-  final entries = buildZoneEntries(state);
+ZoneEntry? resolveFocusedZone(
+  OutputState state,
+  String? focusId, {
+  String? localDeviceId,
+}) {
+  final entries = buildZoneEntries(state, localDeviceId: localDeviceId);
   if (entries.isEmpty) return null;
 
   if (focusId != null && focusId.isNotEmpty) {

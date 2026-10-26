@@ -73,6 +73,7 @@ class _Audio implements SongloftAudioHandler {
   Future<void> setVolume(double volume) async {}
   @override
   Future<void> stop() async => onPlaybackCancelled?.call();
+
   @override
   Future<void> pause() async => onPlaybackCancelled?.call();
   @override
@@ -588,4 +589,150 @@ void main() {
       expect(container.read(playerStateProvider).hasPriorityNext, isFalse);
     },
   );
+
+  // ---- 区域队列接管（Roon 模型：区域拥有队列） ----
+
+  test('adoptZoneQueue 换队列与当前曲目，但不起播', () async {
+    await player.playPlaylist([_song(1), _song(2)]);
+    expect(audio.played, [1]);
+
+    await player.adoptZoneQueue(
+      [_song(7), _song(8), _song(9)],
+      index: 1,
+      position: const Duration(seconds: 42),
+    );
+
+    final st = container.read(playerStateProvider);
+    expect(st.playlist.map((s) => s.id), [7, 8, 9]);
+    expect(st.currentIndex, 1);
+    expect(st.currentSong?.id, 8);
+    expect(st.currentTime, const Duration(seconds: 42));
+    expect(st.isPlaying, isFalse);
+    // 切区域不能顺带出声：本机只接管队列。
+    expect(audio.played, [1]);
+  });
+
+  test('adoptZoneQueue 空队列表示清空', () async {
+    await player.playPlaylist([_song(1), _song(2)]);
+
+    await player.adoptZoneQueue(const <Song>[]);
+
+    final st = container.read(playerStateProvider);
+    expect(st.playlist, isEmpty);
+    expect(st.currentIndex, -1);
+    expect(st.hasSong, isFalse);
+  });
+
+  test('adoptZoneQueue 下标越界时夹到合法范围', () async {
+    await player.adoptZoneQueue([_song(7), _song(8)], index: 9);
+
+    final st = container.read(playerStateProvider);
+    expect(st.currentIndex, 1);
+    expect(st.currentSong?.id, 8);
+  });
+
+  test('adoptZoneQueue 同步总时长，远端区域进度条按本区域曲目画', () async {
+    await player.adoptZoneQueue(
+      [_song(7), _song(8)],
+      index: 1,
+      position: const Duration(seconds: 30),
+      mirrorPlaying: true,
+    );
+
+    final st = container.read(playerStateProvider);
+    // _song() 的 duration 是 180s：远端区域本机不加载音源，
+    // durationStream 不会更新，必须由 adopt 写入。
+    expect(st.duration, const Duration(seconds: 180));
+  });
+
+  test('adoptZoneQueue 位置超过曲目时长时归零，避免瞬间播完', () async {
+    // 服务端历史脏数据可能给出超过时长的位置（实测 283s / 193.8s 的歌），
+    // 直接 seek 会立刻 completed，表现为「切区域后歌瞬间播完」。
+    await player.adoptZoneQueue([
+      _song(7),
+    ], position: const Duration(seconds: 283));
+
+    final st = container.read(playerStateProvider);
+    expect(st.currentTime, Duration.zero);
+    expect(st.isPlaying, isFalse);
+  });
+
+  test('adoptZoneQueue 位置为 0 时不发 seek，按区域位置从头播', () async {
+    // 区域位置是唯一权威：切到位置为 0 的区域后，本机必须从 0 开始，
+    // 不能被上次会话的恢复点（实测 77s）或服务端旧位置拽走。
+    await player.adoptZoneQueue(
+      [_song(7)],
+      position: Duration.zero,
+      localZone: true,
+    );
+
+    expect(audio.played, [7]);
+    expect(audio.seeks, isEmpty);
+    expect(container.read(playerStateProvider).currentTime, Duration.zero);
+  });
+
+  test('adoptZoneQueue mirrorPlaying 镜像远端播放态但不出声', () async {
+    await player.adoptZoneQueue(
+      [_song(7), _song(8)],
+      index: 1,
+      position: const Duration(seconds: 42),
+      mirrorPlaying: true,
+    );
+
+    final st = container.read(playerStateProvider);
+    expect(st.currentSong?.id, 8);
+    expect(st.currentTime, const Duration(seconds: 42));
+    // 远端区域正在播放：UI 显示播放态，但本机不能出声。
+    expect(st.isPlaying, isTrue);
+    expect(audio.played, isEmpty);
+  });
+
+  test('advanceRemotePosition 只在播放时推进进度', () async {
+    await player.adoptZoneQueue(
+      [_song(7)],
+      position: const Duration(seconds: 10),
+      mirrorPlaying: true,
+    );
+
+    player.advanceRemotePosition(const Duration(seconds: 1));
+    expect(
+      container.read(playerStateProvider).currentTime,
+      const Duration(seconds: 11),
+    );
+
+    player.applyRemoteZoneStatus(
+      playing: false,
+      position: const Duration(seconds: 11),
+    );
+    player.advanceRemotePosition(const Duration(seconds: 1));
+    expect(
+      container.read(playerStateProvider).currentTime,
+      const Duration(seconds: 11),
+    );
+  });
+
+  test('applyRemoteZoneStatus 只镜像展示字段，不碰音频', () async {
+    await player.adoptZoneQueue([_song(7)], index: 0);
+
+    player.applyRemoteZoneStatus(
+      playing: true,
+      position: const Duration(seconds: 12),
+    );
+
+    final st = container.read(playerStateProvider);
+    expect(st.isPlaying, isTrue);
+    expect(st.currentTime, const Duration(seconds: 12));
+    // 远端区域出声的是它的设备，本机不能跟着播。
+    expect(audio.played, isEmpty);
+
+    player.applyRemoteZoneStatus(
+      playing: false,
+      position: const Duration(seconds: 30),
+    );
+    expect(container.read(playerStateProvider).isPlaying, isFalse);
+    expect(
+      container.read(playerStateProvider).currentTime,
+      const Duration(seconds: 30),
+    );
+  });
 }

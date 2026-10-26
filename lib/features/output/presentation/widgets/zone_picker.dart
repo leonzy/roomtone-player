@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../pages/group_editor.dart';
+import '../../../playback/presentation/providers/local_output_provider.dart';
 import '../providers/output_provider.dart';
 import '../providers/zone_focus_provider.dart';
 import '../providers/zone_transfer_provider.dart';
@@ -24,12 +25,14 @@ Future<void> showZonePicker(BuildContext context) {
   );
 }
 
-/// 区域控制台：列出全部区域，行内可直接传输与调音量。
+/// 区域选择器：只负责「选哪个区域」，不承载任何播放控制。
+///
+/// 布局对齐 Roon 的区域弹层：一行 = 图标 + 名称，选中行整行高亮；
+/// 音量、播放状态、进度都在主播放面板上，这里不重复展示。
 ///
 /// 关键语义（docs/architecture_playback_ui.md §4.2）：
-/// - 点行主体只切本地焦点，不发任何请求；
-/// - 行内 ▶/⏸ 只控制该区域；
-/// - 行内音量 300ms 防抖后提交该区域；
+/// - 点行只切本地焦点，不发任何请求；
+/// - 切区域 = 切整个播放器（队列 + 当前曲 + 进度），见 §12；
 /// - 转移 / 分组 / 改名 / 派对都是显式菜单动作。
 class ZonePickerSheet extends ConsumerStatefulWidget {
   const ZonePickerSheet({super.key});
@@ -53,7 +56,8 @@ class _ZonePickerSheetState extends ConsumerState<ZonePickerSheet> {
   Widget build(BuildContext context) {
     final state = ref.watch(outputControllerProvider);
     final focusId = ref.watch(zoneFocusProvider);
-    final zones = buildZoneEntries(state);
+    final localDeviceId = ref.watch(localDeviceIdProvider);
+    final zones = buildZoneEntries(state, localDeviceId: localDeviceId);
     final theme = Theme.of(context);
 
     final transfer = ref.watch(zoneTransferProvider);
@@ -86,7 +90,7 @@ class _ZonePickerSheetState extends ConsumerState<ZonePickerSheet> {
                     ),
                   const Spacer(),
                   Text(
-                    '切换焦点不会改变播放',
+                    '选择区域即切换播放器',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.outline,
                     ),
@@ -171,78 +175,14 @@ class _ZoneRow extends ConsumerStatefulWidget {
 }
 
 class _ZoneRowState extends ConsumerState<_ZoneRow> {
-  Timer? _volumeDebounce;
-  late double _volume;
-  int? _lastSentVolume;
-  bool _dragging = false;
   bool _signalExpanded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _volume = widget.zone.volume.toDouble().clamp(0, 100).toDouble();
-  }
 
   @override
   void didUpdateWidget(covariant _ZoneRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 服务端刷新回来的音量只在用户没有拖动、也没有待提交值时回填，
-    // 否则滑杆会在拖动过程中被旧值拽回去。
-    if (!_dragging &&
-        _volumeDebounce == null &&
-        widget.zone.volume != oldWidget.zone.volume) {
-      _volume = widget.zone.volume.toDouble().clamp(0, 100).toDouble();
-    }
     // 服务端回退到旧版本 / 区域被替换后 signal_path 可能消失，收起面板。
     if (widget.zone.signalPath == null) {
       _signalExpanded = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _volumeDebounce?.cancel();
-    super.dispose();
-  }
-
-  void _onVolumeChanged(double value) {
-    setState(() => _volume = value);
-    _volumeDebounce?.cancel();
-    _volumeDebounce = Timer(const Duration(milliseconds: 300), () async {
-      _volumeDebounce = null;
-      final next = _volume.round().clamp(0, 100).toInt();
-      if (next == _lastSentVolume) return;
-      _lastSentVolume = next;
-      final result = await ref
-          .read(outputControllerProvider.notifier)
-          .setZoneVolume(widget.zone.id, next);
-      if (!mounted) return;
-      // 失败时允许用户再次拖到同一值重试；成功时以服务端 clamp 后的值为准。
-      _lastSentVolume = result?.volume;
-    });
-  }
-
-  void _onVolumeChangeStart(double _) {
-    _dragging = true;
-  }
-
-  void _onVolumeChangeEnd(double _) {
-    _dragging = false;
-  }
-
-  Future<void> _toggleTransport() async {
-    final zone = widget.zone;
-    if (!zone.canControl) return;
-    final action = zone.isPlaying ? 'pause' : 'play';
-    final result = await ref
-        .read(outputControllerProvider.notifier)
-        .transport(zone.id, action);
-    if (!mounted) return;
-    if (result == null) {
-      final error = ref.read(outputControllerProvider).error;
-      if (error.isNotEmpty) {
-        ResponsiveSnackBar.showError(context, message: error);
-      }
     }
   }
 
@@ -250,7 +190,11 @@ class _ZoneRowState extends ConsumerState<_ZoneRow> {
     final zone = widget.zone;
     final state = ref.read(outputControllerProvider);
     final controller = ref.read(outputControllerProvider.notifier);
-    final current = resolveFocusedZone(state, ref.read(zoneFocusProvider));
+    final current = resolveFocusedZone(
+      state,
+      ref.read(zoneFocusProvider),
+      localDeviceId: ref.read(localDeviceIdProvider),
+    );
 
     switch (action) {
       case _ZoneAction.transfer:
@@ -268,6 +212,10 @@ class _ZoneRowState extends ConsumerState<_ZoneRow> {
           _showResult(false, '转移失败');
           return;
         }
+        // 转移完成后焦点跟着走：面板里选中的区域从 A 变成 B，
+        // 播放条也切到 B 的队列与进度（Roon 的转移语义）。
+        await ref.read(zoneFocusProvider.notifier).focus(zone.id);
+        if (!mounted) return;
         _showResult(true, '已转移到${zone.name}');
         return;
       case _ZoneAction.group:
@@ -416,169 +364,146 @@ class _ZoneRowState extends ConsumerState<_ZoneRow> {
   Widget build(BuildContext context) {
     final zone = widget.zone;
     final theme = Theme.of(context);
-    final canControl = zone.canControl;
     final dimmed = !zone.online;
     final signalPath = zone.signalPath;
 
-    return InkWell(
-      key: ValueKey<String>('zone-row-body-${zone.id}'),
-      onTap:
-          (widget.transferring || widget.handingOver)
-              ? null
-              : () => ref.read(zoneFocusProvider.notifier).focus(zone.id),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final selectedBg = theme.colorScheme.primaryContainer;
+    final selectedFg = theme.colorScheme.onPrimaryContainer;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Material(
+        color: widget.focused ? selectedBg : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: ValueKey<String>('zone-row-body-${zone.id}'),
+          onTap:
+              (widget.transferring || widget.handingOver)
+                  ? null
+                  : () => ref.read(zoneFocusProvider.notifier).focus(zone.id),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  widget.focused ? Icons.circle : Icons.circle_outlined,
-                  size: 10,
-                  color:
-                      widget.focused
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline,
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  zoneIconFor(zone),
-                  size: 20,
-                  color: dimmed ? theme.colorScheme.outline : null,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    zone.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight:
-                          widget.focused ? FontWeight.w600 : FontWeight.w500,
-                      color: dimmed ? theme.colorScheme.outline : null,
+                Row(
+                  children: [
+                    Icon(
+                      zoneIconFor(zone),
+                      size: 26,
+                      color:
+                          dimmed
+                              ? theme.colorScheme.outline
+                              : widget.focused
+                              ? selectedFg
+                              : theme.colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ),
-                if (widget.transferring || widget.handingOver)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Text(
-                      widget.transferring ? '正在切换…' : '正在移交',
-                      key: ValueKey<String>('zone-transfer-${zone.id}'),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        zone.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight:
+                              widget.focused
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                          color:
+                              dimmed
+                                  ? theme.colorScheme.outline
+                                  : widget.focused
+                                  ? selectedFg
+                                  : null,
+                        ),
                       ),
                     ),
-                  ),
+                    if (widget.transferring || widget.handingOver)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Text(
+                          widget.transferring ? '正在切换…' : '正在移交',
+                          key: ValueKey<String>('zone-transfer-${zone.id}'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    if (signalPath != null)
+                      SignalPathDot(
+                        key: ValueKey<String>('zone-signal-${zone.id}'),
+                        kind: signalPath.kind,
+                        expanded: _signalExpanded,
+                        onTap:
+                            () => setState(
+                              () => _signalExpanded = !_signalExpanded,
+                            ),
+                      ),
+                    PopupMenuButton<_ZoneAction>(
+                      key: ValueKey<String>('zone-menu-${zone.id}'),
+                      enabled:
+                          zone.isReal &&
+                          !widget.transferring &&
+                          !widget.handingOver,
+                      tooltip: '更多',
+                      padding: EdgeInsets.zero,
+                      iconSize: 20,
+                      onSelected: _handleAction,
+                      itemBuilder: (context) {
+                        final current = resolveFocusedZone(
+                          ref.read(outputControllerProvider),
+                          ref.read(zoneFocusProvider),
+                          localDeviceId: ref.read(localDeviceIdProvider),
+                        );
+                        final canUseCurrent =
+                            current != null &&
+                            current.isReal &&
+                            current.id != zone.id;
+                        final inParty = zone.partyId.isNotEmpty;
+                        return [
+                          PopupMenuItem(
+                            value: _ZoneAction.transfer,
+                            enabled: canUseCurrent,
+                            child: const Text('转移到此区域'),
+                          ),
+                          PopupMenuItem(
+                            value: _ZoneAction.group,
+                            enabled: canUseCurrent,
+                            child: const Text('与当前区域分组'),
+                          ),
+                          const PopupMenuItem(
+                            value: _ZoneAction.rename,
+                            child: Text('重命名 / 图标'),
+                          ),
+                          PopupMenuItem(
+                            value: _ZoneAction.party,
+                            enabled: !inParty,
+                            child: Text(inParty ? '已在派对中' : '加入派对'),
+                          ),
+                        ];
+                      },
+                    ),
+                  ],
+                ),
                 if (signalPath != null)
-                  SignalPathDot(
-                    key: ValueKey<String>('zone-signal-${zone.id}'),
-                    kind: signalPath.kind,
-                    expanded: _signalExpanded,
-                    onTap:
-                        () =>
-                            setState(() => _signalExpanded = !_signalExpanded),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child:
+                        _signalExpanded
+                            ? SignalPathPanel(
+                              key: ValueKey<String>(
+                                'zone-signal-panel-${zone.id}',
+                              ),
+                              path: signalPath,
+                            )
+                            : const SizedBox.shrink(),
                   ),
-                IconButton(
-                  key: ValueKey<String>('zone-transport-${zone.id}'),
-                  tooltip: zone.isPlaying ? '暂停' : '播放',
-                  onPressed:
-                      canControl && !widget.transferring && !widget.handingOver
-                          ? _toggleTransport
-                          : null,
-                  icon: Icon(
-                    zone.isPlaying
-                        ? Icons.pause_circle_filled_rounded
-                        : Icons.play_circle_filled_rounded,
-                    size: 28,
-                  ),
-                ),
-                PopupMenuButton<_ZoneAction>(
-                  key: ValueKey<String>('zone-menu-${zone.id}'),
-                  enabled:
-                      zone.isReal &&
-                      !widget.transferring &&
-                      !widget.handingOver,
-                  tooltip: '更多',
-                  onSelected: _handleAction,
-                  itemBuilder: (context) {
-                    final current = resolveFocusedZone(
-                      ref.read(outputControllerProvider),
-                      ref.read(zoneFocusProvider),
-                    );
-                    final canUseCurrent =
-                        current != null &&
-                        current.isReal &&
-                        current.id != zone.id;
-                    final inParty = zone.partyId.isNotEmpty;
-                    return [
-                      PopupMenuItem(
-                        value: _ZoneAction.transfer,
-                        enabled: canUseCurrent,
-                        child: const Text('转移到此区域'),
-                      ),
-                      PopupMenuItem(
-                        value: _ZoneAction.group,
-                        enabled: canUseCurrent,
-                        child: const Text('与当前区域分组'),
-                      ),
-                      const PopupMenuItem(
-                        value: _ZoneAction.rename,
-                        child: Text('重命名 / 图标'),
-                      ),
-                      PopupMenuItem(
-                        value: _ZoneAction.party,
-                        enabled: !inParty,
-                        child: Text(inParty ? '已在派对中' : '加入派对'),
-                      ),
-                    ];
-                  },
-                ),
               ],
             ),
-            const SizedBox(height: 2),
-            Padding(
-              padding: const EdgeInsets.only(left: 26),
-              child: Row(
-                children: [
-                  Expanded(child: ZoneStatusLine(zone: zone)),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.volume_up_rounded,
-                    size: 16,
-                    color: dimmed ? theme.colorScheme.outline : null,
-                  ),
-                  SizedBox(
-                    width: 96,
-                    child: Slider(
-                      key: ValueKey<String>('zone-volume-${zone.id}'),
-                      value: _volume.clamp(0, 100).toDouble(),
-                      min: 0,
-                      max: 100,
-                      divisions: 100,
-                      onChanged: canControl ? _onVolumeChanged : null,
-                      onChangeStart: canControl ? _onVolumeChangeStart : null,
-                      onChangeEnd: canControl ? _onVolumeChangeEnd : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (signalPath != null)
-              AnimatedSize(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child:
-                    _signalExpanded
-                        ? SignalPathPanel(
-                          key: ValueKey<String>('zone-signal-panel-${zone.id}'),
-                          path: signalPath,
-                        )
-                        : const SizedBox.shrink(),
-              ),
-          ],
+          ),
         ),
       ),
     );

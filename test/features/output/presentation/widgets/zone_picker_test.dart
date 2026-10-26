@@ -9,6 +9,7 @@ import 'package:songloft_flutter/features/output/data/output_api.dart';
 import 'package:songloft_flutter/features/output/domain/output_models.dart';
 import 'package:songloft_flutter/features/output/presentation/providers/output_provider.dart';
 import 'package:songloft_flutter/features/output/presentation/providers/zone_focus_provider.dart';
+import 'package:songloft_flutter/features/output/presentation/widgets/zone_display.dart';
 import 'package:songloft_flutter/features/output/presentation/widgets/zone_picker.dart';
 import 'package:songloft_flutter/features/playback/domain/playback_event.dart';
 import 'package:songloft_flutter/features/playback/presentation/providers/playback_socket_provider.dart';
@@ -179,7 +180,7 @@ void main() {
     expect(_containerOf(tester).read(zoneFocusProvider), 'g1');
   });
 
-  testWidgets('点行内 ▶ 只触发该区域的 transport', (tester) async {
+  testWidgets('区域行没有播放按钮：点行只切焦点，不发 transport', (tester) async {
     final api = _FakeOutputApi(
       groups: <OutputGroup>[
         _group(id: 'g1', name: '客厅', playerId: 'p1'),
@@ -195,15 +196,20 @@ void main() {
     await tester.pumpAndSettle();
     api.transportCalls.clear();
 
-    await tester.tap(find.byKey(const ValueKey<String>('zone-transport-g1')));
+    // Roon 语义：区域面板只负责选区域，播放交给主播放器。
+    expect(
+      find.byKey(const ValueKey<String>('zone-transport-g1')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('客厅'));
     await tester.pumpAndSettle();
 
-    expect(api.transportCalls, <String>['g1:play']);
-    // 点按钮不能顺带切焦点：焦点仍为空，由 ZoneButton 回退到本机。
-    expect(_containerOf(tester).read(zoneFocusProvider), isNull);
+    expect(api.transportCalls, isEmpty);
+    expect(_containerOf(tester).read(zoneFocusProvider), 'g1');
   });
 
-  testWidgets('音量滑杆 300ms 防抖后只提交一次', (tester) async {
+  testWidgets('区域行不显示音量与播放状态：这些只在主播放面板', (tester) async {
     final api = _FakeOutputApi(
       groups: <OutputGroup>[_group(id: 'g1', name: '客厅', playerId: 'p1')],
       players: <OutputDevice>[_player('p1', '客厅 Soundbar')],
@@ -211,21 +217,13 @@ void main() {
 
     await tester.pumpWidget(_app(api));
     await tester.pumpAndSettle();
-    api.volumeCalls.clear();
 
-    final sliderFinder = find.byKey(const ValueKey<String>('zone-volume-g1'));
-    final slider = tester.widget<Slider>(sliderFinder);
-    slider.onChanged!(20);
-    slider.onChanged!(40);
-    slider.onChanged!(60);
-
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(api.volumeCalls, isEmpty);
-
-    await tester.pump(const Duration(milliseconds: 250));
-    await tester.pumpAndSettle();
-
-    expect(api.volumeCalls, <String>['g1:60']);
+    // Roon 语义：区域弹层只做选择，音量 / 播放状态 / 进度都在播放面板。
+    expect(find.byKey(const ValueKey<String>('zone-volume-g1')), findsNothing);
+    expect(find.byType(Slider), findsNothing);
+    expect(find.byType(ZoneStatusLine), findsNothing);
+    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+    expect(find.byIcon(Icons.pause_rounded), findsNothing);
   });
 
   testWidgets('有 signal_path 时显示指示点，点开显示五段链路', (tester) async {
@@ -357,6 +355,18 @@ void main() {
 
     api.transferGate!.complete();
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('转移成功后焦点跟到目标区域', (tester) async {
+    final api = transferApi();
+    await startTransfer(tester, api);
+    expect(_containerOf(tester).read(zoneFocusProvider), 'g1');
+
+    api.transferGate!.complete();
+    await tester.pumpAndSettle();
+
+    // Roon 语义：转移完成后面板选中的区域从 A 变成 B。
+    expect(_containerOf(tester).read(zoneFocusProvider), 'g2');
   });
 
   testWidgets('收到目标区域 state 事件后恢复交互', (tester) async {

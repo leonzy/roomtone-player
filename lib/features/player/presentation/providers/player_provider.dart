@@ -32,6 +32,8 @@ import '../../../library/presentation/providers/category_provider.dart'
     show categoryFields, categorySongsFilter;
 import '../../../library/presentation/providers/favorite_provider.dart';
 import '../../../library/presentation/providers/songs_provider.dart';
+import '../../../output/presentation/providers/output_provider.dart';
+import '../../../output/presentation/providers/remote_zone_provider.dart';
 import '../../../playlist/data/playlist_api.dart';
 import '../../../playlist/presentation/providers/playlist_provider.dart';
 import '../../domain/playback_context.dart';
@@ -81,13 +83,24 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   final SleepTimerLogic _sleepTimerLogic = SleepTimerLogic();
   CancelToken? _prefetchCancelToken;
-  bool _disposed = false; // Notifier 是否已销毁（微任务回调前的安全守卫）
+  bool _disposed = false;
+
+  /// 正在为远端区域构建队列：期间不能再走一次委派分支。
+  bool _delegating = false; // Notifier 是否已销毁（微任务回调前的安全守卫）
 
   final Random _random = Random();
   final PlayModeResolver _modeResolver = PlayModeResolver(mode: PlayMode.order);
   int _loadGeneration = 0; // 后台加载代次，用于取消过期的异步加载任务
   final QueueLoader _queueLoader = QueueLoader();
   int _playGeneration = 0; // 播放协程代次：用户快速切歌时，旧协程在 await 后发现 gen 变化即退出
+
+  // 本机音频引擎的真实状态。与 [state] 分开：切到远端区域后 UI 投影的是
+  // 那个区域的队列与进度，但本机引擎仍停在它自己那一首上，上报服务端
+  // 必须用这组字段，否则会把远端区域的歌写进本机所在区域。
+  int? _loadedSongId;
+  Duration _loadedPosition = Duration.zero;
+  bool _loadedPlaying = false;
+  bool _loadedHasSong = false;
   int _playGenerationAtSource = 0; // 当前音频源对应的代次，position stream 据此忽略切歌过渡期的旧位置
   bool _livePlaybackRequested = false;
 
@@ -344,7 +357,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
       (_) async {
         if (!state.isPlaying ||
             state.currentIndex < 0 ||
-            _webPlaybackPersistenceDisabled) {
+            _webPlaybackPersistenceDisabled ||
+            _remoteZoneId() != null) {
           return;
         }
         try {
@@ -370,6 +384,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // 监听播放位置
     _positionSubscription = _audioHandler.positionStream.listen((position) {
       if (_playGeneration != _playGenerationAtSource) return;
+      _loadedPosition = position;
+      // UI 正在投影远端区域时，本机位置不能写进去。
+      if (_remoteZoneId() != null) return;
       state = state.copyWith(currentTime: position);
       // 剩余≤30s 时保险再触发一次预拉取（防止首次触发太早使转码未完成）
       _maybeFireLateStagePrefetch(position);
@@ -393,6 +410,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final playing =
           (isLive && _livePlaybackRequested && state.isRetrying) ||
           playerState.playing;
+      _loadedPlaying = playerState.playing;
+      // UI 正在投影远端区域时，本机播放态不能覆盖镜像态。
+      if (_remoteZoneId() != null) return;
       state = state.copyWith(
         isPlaying: playing,
         isBuffering:
@@ -656,11 +676,159 @@ class PlayerNotifier extends Notifier<PlayerState> {
     return false;
   }
 
+  /// 焦点区域不含本机时返回该区域 id。
+  ///
+  /// 这种区域的声音由服务端推给它的设备，本机只是遥控器：播放命令要发给
+  /// 服务端，而不是在本机起播。
+  String? _remoteZoneId() => ref.read(remoteZoneIdProvider);
+
+  /// 把播放命令发给焦点区域（本机不出声）。
+  Future<void> _delegateTransport(
+    String zoneId,
+    String action, {
+    double? position,
+  }) async {
+    await ref
+        .read(outputControllerProvider.notifier)
+        .transport(zoneId, action, position: position);
+  }
+
+  /// 在远端区域上执行一次“改队列 + 起播”。
+  ///
+  /// 先本地改队列（[build] 里传 autoPlay: false，不碰本机音频），再把整条
+  /// 队列推给服务端，最后让服务端起播。顺序不能反：服务端 play 时读的是
+  /// 它自己保存的队列。
+  Future<void> _runOnRemoteZone(
+    String zoneId,
+    Future<void> Function() build,
+  ) async {
+    _delegating = true;
+    try {
+      await build();
+    } finally {
+      _delegating = false;
+    }
+    final ids = state.playlist.map((s) => s.id).toList(growable: false);
+    if (ids.isEmpty) return;
+    final index = state.currentIndex < 0 ? 0 : state.currentIndex;
+    try {
+      await ref.read(outputApiProvider).replaceQueue(zoneId, ids, index: index);
+    } catch (e) {
+      debugPrint('[Player] remote queue push $zoneId failed: $e');
+      return;
+    }
+    await _delegateTransport(zoneId, 'play');
+  }
+
+  /// 焦点区域不含本机时，把该区域的服务端状态镜像到播放器 UI。
+  ///
+  /// 本机不出声，所以只改展示字段，不碰音频管线。
+  void applyRemoteZoneStatus({
+    required bool playing,
+    required Duration position,
+  }) {
+    if (state.isPlaying == playing && state.currentTime == position) return;
+    state = state.copyWith(isPlaying: playing, currentTime: position);
+  }
+
+  /// 远端区域在播放时，本地按秒推进进度条。
+  ///
+  /// 服务端只在状态变化时发 state 事件，不会每秒推送位置；没有这个
+  /// 本地推进，切到正在播放的远端区域后进度条会停在接管那一刻。
+  void advanceRemotePosition(Duration delta) {
+    if (!state.isPlaying) return;
+    final next = state.currentTime + delta;
+    if (state.duration > Duration.zero && next > state.duration) {
+      state = state.copyWith(currentTime: state.duration);
+      return;
+    }
+    state = state.copyWith(currentTime: next);
+  }
+
+  /// 接管某个区域的队列（切换区域时调用）。
+  ///
+  /// 只换队列与当前曲目，不主动起播：是否出声由 [autoPlay] 决定。
+  /// 区域是队列的所有者，本地队列只是它的投影，所以这里不走
+  /// `_onQueueEdited` 之外的任何“新建队列”逻辑。
+  /// [localZone] 表示该区域包含本机：切回来时要保证音频引擎加载的是
+  /// 这个区域的曲目，否则按播放会放出上一个区域的歌。
+  /// [mirrorPlaying] 用于远端区域：只把「正在播放」镜像到 UI，不出声。
+  Future<void> adoptZoneQueue(
+    List<Song> songs, {
+    int index = 0,
+    Duration position = Duration.zero,
+    bool autoPlay = false,
+    bool localZone = false,
+    bool mirrorPlaying = false,
+  }) async {
+    if (songs.isEmpty) {
+      clearPlaylist();
+      return;
+    }
+    final safeIndex = index.clamp(0, songs.length - 1);
+    // 区域位置是唯一权威：上一次会话的恢复点（PlaybackResumeState）只
+    // 适用于「恢复上次播放」，绝不能覆盖区域进度。否则切到位置为 0 的
+    // 区域后按播放，会被 seek 回上次会话的旧位置（实测 77s）。
+    _playbackResumeState.clear();
+    // 服务端位置可能超过当前曲目时长（历史脏数据 / 跨曲目累加），
+    // 直接 seek 会立刻触发 completed，表现为「切区域后歌瞬间播完」。
+    final songDuration = Duration(
+      milliseconds: (songs[safeIndex].duration * 1000).round(),
+    );
+    final safePosition =
+        songDuration > Duration.zero && position > songDuration
+            ? Duration.zero
+            : position;
+    final previousQueue = PlayQueue(
+      songs: state.playlist,
+      currentIndex: state.currentIndex,
+    );
+    state = state.copyWith(
+      playlist: songs,
+      currentIndex: safeIndex,
+      currentSong: songs[safeIndex],
+      currentTime: safePosition,
+      // 总时长必须跟着区域曲目走：远端区域本机不加载音源，
+      // durationStream 不会更新，否则进度条按上一首的时长画。
+      duration: songDuration,
+      isPlaying: mirrorPlaying,
+      clearPlaybackContext: true,
+    );
+    _onQueueEdited(previousQueue);
+
+    if (!autoPlay) {
+      // 切到不出声的区域：本机必须真的停下来，否则 UI 显示暂停、声音还在。
+      // 用 pause 而不是 stop：stop 会把进度清零，切回来就丢了。
+      if (loadedIsPlaying) await pauseForServer();
+      if (localZone && loadedSongId != songs[safeIndex].id) {
+        final gen = ++_playGeneration;
+        await _playCurrent(gen, autoPlay: false);
+        if (gen != _playGeneration) return;
+        if (safePosition > Duration.zero) await seek(safePosition);
+      }
+      // 远端区域的队列不是本机的播放状态，不能写进本地恢复点。
+      if (localZone) _savePlaybackState();
+      return;
+    }
+    final gen = ++_playGeneration;
+    await _playCurrent(gen, autoPlay: true);
+    if (gen != _playGeneration) return;
+    if (safePosition > Duration.zero) {
+      await seek(safePosition);
+    }
+    _savePlaybackState();
+  }
+
   /// 播放单曲（添加到播放列表并播放）。
   ///
   /// [autoPlay] 为 false 时只加载音源并 seek，不自动起播；服务端接管
   /// 本机输出时用它实现 load → play_at 的精确起播。
   Future<void> playSong(Song song, {bool autoPlay = true}) async {
+    final remote = _delegating ? null : _remoteZoneId();
+    if (remote != null) {
+      await _runOnRemoteZone(remote, () => playSong(song, autoPlay: false));
+      return;
+    }
     debugPrint(
       '[Player] playSong: ${song.title} (id: ${song.id}, type: ${song.type})',
     );
@@ -774,6 +942,20 @@ class PlayerNotifier extends Notifier<PlayerState> {
     PlaybackContext? context,
     bool keepContext = false,
   }) async {
+    final remote = _delegating ? null : _remoteZoneId();
+    if (remote != null) {
+      await _runOnRemoteZone(
+        remote,
+        () => playPlaylist(
+          songs,
+          startIndex: startIndex,
+          sourcePlaylistId: sourcePlaylistId,
+          context: context,
+          keepContext: keepContext,
+        ),
+      );
+      return;
+    }
     debugPrint(
       '[Player] playPlaylist: ${songs.length} songs, startIndex: $startIndex',
     );
@@ -936,6 +1118,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 暂停/播放切换
   Future<void> togglePlay() async {
+    final remote = _remoteZoneId();
+    if (remote != null) {
+      await _delegateTransport(remote, state.isPlaying ? 'pause' : 'play');
+      return;
+    }
     if (ref.read(dlnaStateProvider).isCasting) {
       await ref.read(dlnaStateProvider.notifier).togglePlay();
       return;
@@ -986,6 +1173,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
   }
 
+  /// 本机音频引擎实际加载的曲目 id（不是 UI 投影的区域曲目）。
+  int? get loadedSongId => _loadedSongId;
+
+  /// 本机音频引擎的真实播放位置（不是 UI 投影的区域位置）。
+  Duration get loadedPosition => _loadedPosition;
+
+  /// 本机音频引擎是否真的在出声。
+  bool get loadedIsPlaying => _loadedPlaying;
+
+  /// 本机音频引擎是否加载了曲目。
+  bool get loadedHasSong => _loadedHasSong;
+
   /// 服务端接管：加载指定歌曲但不自动起播。
   ///
   /// 服务端随后会发 `play`（带 `play_at_ms`），由 [resumeForServer] 对齐起播。
@@ -1000,6 +1199,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 服务端接管：暂停本机输出。
   Future<void> pauseForServer() async {
+    _loadedPlaying = false;
     if (!state.hasSong) return;
     if (kIsWeb && _audioHandler.hlsVideoPrimaryMode) {
       ref.read(webVideoPlaybackProvider.notifier).pause();
@@ -1022,10 +1222,15 @@ class PlayerNotifier extends Notifier<PlayerState> {
     } else {
       await _audioHandler.play();
     }
+    _loadedPlaying = true;
   }
 
   /// 服务端接管：停止本机输出（保留当前歌曲与进度）。
   Future<void> stopForServer() async {
+    _loadedPlaying = false;
+    _loadedPosition = Duration.zero;
+    _loadedSongId = null;
+    _loadedHasSong = false;
     if (kIsWeb && _audioHandler.hlsVideoPrimaryMode) {
       ref.read(webVideoPlaybackProvider.notifier).pause();
     }
@@ -1034,6 +1239,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 播放下一首
   Future<void> playNext() async {
+    final remote = _remoteZoneId();
+    if (remote != null) {
+      await _delegateTransport(remote, 'next');
+      return;
+    }
     debugPrint(
       '[Player] playNext: currentIndex: ${state.currentIndex}, playlistLength: ${state.playlist.length}',
     );
@@ -1092,6 +1302,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 播放上一首
   Future<void> playPrev() async {
+    final remote = _remoteZoneId();
+    if (remote != null) {
+      await _delegateTransport(remote, 'prev');
+      return;
+    }
     _retryPolicy.recordSuccess();
     debugPrint(
       '[Player] playPrev: currentIndex: ${state.currentIndex}, currentTime: ${state.currentTime.inSeconds}s',
@@ -1134,6 +1349,15 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 跳转进度
   Future<void> seek(Duration position) async {
+    final remote = _remoteZoneId();
+    if (remote != null) {
+      await _delegateTransport(
+        remote,
+        'seek',
+        position: position.inMilliseconds / 1000,
+      );
+      return;
+    }
     if (ref.read(dlnaStateProvider).isCasting) {
       await ref.read(dlnaStateProvider.notifier).seekTo(position);
       return;
@@ -1144,6 +1368,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       return;
     }
     await _audioHandler.seek(position);
+    _loadedPosition = position;
   }
 
   /// 相对当前进度快进/快退，clamp 到 [0, duration]。
@@ -2209,6 +2434,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
         );
         if (_isSuperseded(gen, 'after-playSong')) return;
         _playGenerationAtSource = gen;
+        _loadedSongId = song.id;
+        _loadedHasSong = true;
+        _loadedPosition = Duration.zero;
+        _loadedPlaying = autoPlay;
         // 移动平台：音量由系统控制，just_audio 固定最大
         // 桌面/Web：使用 just_audio 播放器音量
         if (_useSystemVolume) {

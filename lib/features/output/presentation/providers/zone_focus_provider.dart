@@ -34,6 +34,9 @@ class ZoneFocusNotifier extends Notifier<String?> {
 
   @override
   String? build() {
+    // 焦点是 App 级 UI 状态：被 auto-dispose 重建会让 state 归 null，
+    // 随后 _restore() 从 prefs 读回旧值，表现为区域自己来回跳。
+    ref.keepAlive();
     Future.microtask(_restore);
     return null;
   }
@@ -91,6 +94,7 @@ class ZoneAutoFollowNotifier extends Notifier<bool> {
 
   @override
   bool build() {
+    ref.keepAlive();
     ref.listen<AsyncValue<PlaybackEvent>>(playbackEventsProvider, (_, next) {
       final event = next.value;
       if (event != null) _onPlaybackEvent(event);
