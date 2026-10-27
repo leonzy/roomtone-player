@@ -45,3 +45,11 @@ User reported that changing UI focus muted ongoing Web playback, and volume labe
 - Regressions cover pending loads across focus/remote edits, empty zones, background position/next track, returning without reload, local transport while viewing remote, and queue ownership. 368 related player/output/layout tests passed, including volume label/slider widget checks.
 
 Live recheck: the final local embedded build played the original Web queue and showed integer volume 11. After focusing paused Cocoon, Web remained playing (song_id=9, position 130.503s and advancing), while Cocoon stayed paused. User explicitly confirmed that audio remained continuous. Returning to Web showed 03:57 without restarting, still with integer volume 11. Targeted Dart analysis, Web release and embedded Go builds passed. The user's current playback choice was preserved. Evidence: local tools directory web-independent-live-a.json and web-independent-volume-fixed.png.
+
+
+## Transfer fixes (2026-10-28)
+
+- The volume popover closes before the transfer dialog opens from a surviving page context. Closing transfer no longer exposes the old volume panel.
+- Explicit server stop invalidates pending local media loads. Changing control focus still leaves Web playback independent.
+- Added popover transition and stop-during-load regressions. All 370 related playback/output/layout tests passed; changed-file Dart analysis and release Web build passed.
+- Actual local UI confirmed the transfer dialog replaces the volume panel and closing it returns to the page. End-to-end transfer to a busy target was not completed: the dining speaker disconnected and Cocoon first returned SETUP 500. The user requested no more playback during retry; all test outputs were stopped. This transfer and its listening result are not marked passed.

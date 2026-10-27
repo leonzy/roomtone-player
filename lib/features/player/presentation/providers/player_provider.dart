@@ -1307,6 +1307,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 服务端接管：停止本机输出（保留当前歌曲与进度）。
   Future<void> stopForServer() async {
+    _nextPlayGeneration();
     _loadedPlaying = false;
     _loadedPosition = Duration.zero;
     _loadedSongId = null;

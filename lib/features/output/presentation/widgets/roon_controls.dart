@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../playback/presentation/providers/local_output_provider.dart';
 import '../../../player/presentation/providers/player_provider.dart';
 import '../providers/output_provider.dart';
+import '../../domain/output_models.dart';
 import '../providers/zone_focus_provider.dart';
 import '../pages/transfer_sheet.dart';
 import 'roon_volume.dart';
@@ -337,7 +338,21 @@ class RoonVolumeButton extends ConsumerWidget {
     final zone = focusedOutput(ref);
     final player = ref.watch(activePlaybackStateProvider);
     return InkWell(
-      onTap: () => showPlayerPopover(context, const _VolumePanel(), width: 440),
+      onTap: () async {
+        OutputGroup? transferGroup;
+        await showPlayerPopover(
+          context,
+          _VolumePanel(
+            onTransfer: (group) {
+              transferGroup = group;
+            },
+          ),
+          width: 440,
+        );
+        if (transferGroup != null && context.mounted) {
+          await showTransferSheet(context, ref, transferGroup!);
+        }
+      },
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -359,7 +374,8 @@ class RoonVolumeButton extends ConsumerWidget {
 }
 
 class _VolumePanel extends ConsumerWidget {
-  const _VolumePanel();
+  const _VolumePanel({required this.onTransfer});
+  final ValueChanged<OutputGroup> onTransfer;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final zone = focusedOutput(ref);
@@ -391,7 +407,10 @@ class _VolumePanel extends ConsumerWidget {
                 onPressed:
                     zone?.group == null
                         ? null
-                        : () => showTransferSheet(context, ref, zone!.group!),
+                        : () {
+                          onTransfer(zone!.group!);
+                          Navigator.of(context).pop();
+                        },
               ),
               IconButton(
                 tooltip: '区域设置',

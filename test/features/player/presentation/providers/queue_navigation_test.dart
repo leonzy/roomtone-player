@@ -482,6 +482,23 @@ void main() {
     },
   );
 
+  test(
+    'explicit transfer stop cancels pending Web load even while viewing B',
+    () async {
+      audio.playGate = Completer<void>();
+      final load = player.playPlaylist([_song(1)]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      container.read(remoteZoneIdProvider.notifier).set('b');
+      await player.adoptZoneQueue([_song(2)]);
+      await player.runOnLocalOutput(player.stopForServer);
+      audio.playGate!.complete();
+      await load;
+      expect(player.loadedHasSong, isFalse);
+      expect(player.loadedIsPlaying, isFalse);
+      expect(container.read(playerStateProvider).currentSong?.id, 2);
+    },
+  );
+
   for (final mode in PlayMode.values) {
     test('live completion stays on station in $mode, preserving priority', () {
       fakeAsync((clock) {

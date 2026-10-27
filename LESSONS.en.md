@@ -127,3 +127,8 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 - On 2026-10-27 the user confirmed that selecting B muted Web. The earlier duplicate-playback pause guard was too broad.
 - Fix: separate audio context/state from UI projection; retain local ownership for completion, device commands and queue sync, while remote edits never load local media. 368 related tests passed; see [zone validation](docs/en/roon-zones-20261027.md).
 - Seen 1× (2026-10-27), local fix; the earlier pause-on-focus rule is revoked.
+
+
+### ZONE-004: Wait for the old popover before opening its replacement
+
+- 2026-10-28: Opening transfer directly from the volume panel left the old overlay behind. A surviving page now waits for popover dismissal before opening transfer. Widget and actual UI checks passed. Explicit device stop also cancels pending loads; changing focus does not stop output. Seen 1×.
