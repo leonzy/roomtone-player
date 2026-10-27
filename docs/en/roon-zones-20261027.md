@@ -32,3 +32,16 @@ Target: Flutter base `152c8d0` plus the current uncommitted worktree; Windows / 
 Final checks: 363 tests passed; targeted `dart analyze` on six changed implementation/test files reported no issues; `git diff --check` passed. Web release built and was embedded in the local Go dev executable. At approximately 440px, the actual browser queue opens, closes, and remains usable. Starting English audio from the library with Cocoon focused produced Cocoon state=playing (song_id=2), Web state=idle with an empty queue, no DOM audio/video elements, and no local SongloftAudioHandler.playSong call. Playback was paused afterward and the original queue/index/position restored. No additional listening confirmation was requested; state/media checks are not represented as a new listening acceptance.
 
 Final-build queue selection recheck: Cocoon song_id=5/state=playing; Web song_id=0/state=idle; duration updated to 04:05. DOM media elements and local loading logs remained empty. Evidence: `C:/Users/leon/.local/roomtone-tools/narrow-remote-proof.json` and `narrow-queue-fixed.png`. API assertions confirmed restoration of the original eight-song queue, index 3, position 62.2211278 seconds and paused state.
+
+
+## Independent Web playback and integer volume (2026-10-27)
+
+User reported that changing UI focus muted ongoing Web playback, and volume labels exposed long decimals. The earlier immediate-pause-on-remote-focus guard was too broad; this section supersedes that behavior.
+
+- Focus selects the zone being controlled without stopping the local renderer. Local playback state/mode is retained separately; async loads, audio events, natural completion and server device commands execute in the local output context.
+- Remote song selection still edits/sends only its own queue and never loads Web media. Empty remote queues clear only the projection. Returning to Web uses its actual track/position without reloading an existing source.
+- Device commands for the local renderer are not gated by UI focus. Queue debounces retain their zone owner; background Web track changes synchronize to the Web group instead of B.
+- Volume labels round to integers; the local slider uses 100 steps and local writes round to integers.
+- Regressions cover pending loads across focus/remote edits, empty zones, background position/next track, returning without reload, local transport while viewing remote, and queue ownership. 368 related player/output/layout tests passed, including volume label/slider widget checks.
+
+Live recheck: the final local embedded build played the original Web queue and showed integer volume 11. After focusing paused Cocoon, Web remained playing (song_id=9, position 130.503s and advancing), while Cocoon stayed paused. User explicitly confirmed that audio remained continuous. Returning to Web showed 03:57 without restarting, still with integer volume 11. Targeted Dart analysis, Web release and embedded Go builds passed. The user's current playback choice was preserved. Evidence: local tools directory web-independent-live-a.json and web-independent-volume-fixed.png.

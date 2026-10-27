@@ -42,7 +42,8 @@ class ZoneQueueSync {
   bool _adopting = false;
   int _adoptGeneration = 0;
 
-  Timer? _debounce;
+  final Map<String, Timer> _pendingPushes = {};
+  StreamSubscription<PlayerState>? _localSubscription;
 
   /// 远端区域在播放时按秒推进进度条（服务端不推送位置）。
   Timer? _remoteTick;
@@ -69,6 +70,22 @@ class ZoneQueueSync {
       _schedulePush(next);
     });
 
+    _localSubscription = _ref
+        .read(playerStateProvider.notifier)
+        .localOutputStates
+        .listen((state) {
+          final zones = buildZoneEntries(
+            _ref.read(outputControllerProvider),
+            localDeviceId: _ref.read(localDeviceIdProvider),
+          );
+          for (final zone in zones) {
+            if (zone.isLocal && zone.isReal) {
+              _queuePush(zone.id, state);
+              break;
+            }
+          }
+        });
+
     _ref.listen<AsyncValue<PlaybackEvent>>(playbackEventsProvider, (_, next) {
       final event = next.value;
       if (event != null) _onPlaybackEvent(event);
@@ -77,7 +94,12 @@ class ZoneQueueSync {
 
   void dispose() {
     _disposed = true;
-    _debounce?.cancel();
+    for (final timer in _pendingPushes.values) {
+      timer.cancel();
+    }
+    _pendingPushes.clear();
+    unawaited(_localSubscription?.cancel());
+
     _remoteTick?.cancel();
     _identityRefresh?.cancel();
   }
@@ -103,14 +125,14 @@ class ZoneQueueSync {
       ++_adoptGeneration;
       _adoptedFor = null;
       _adopting = false;
-      _debounce?.cancel();
+
       _syncRemoteTick(null);
       return;
     }
     if (!zone.isReal) {
       ++_adoptGeneration;
       _adopting = false;
-      _debounce?.cancel();
+
       // 本机还没注册成服务端区域：没有可同步的队列，保持本地队列。
       _adoptedFor = null;
       _syncRemoteTick(zone);
@@ -121,7 +143,7 @@ class ZoneQueueSync {
       return;
     }
     _adoptedFor = zone.id;
-    _debounce?.cancel();
+
     final generation = ++_adoptGeneration;
     await _adopt(zone, generation);
     if (generation == _adoptGeneration) _syncRemoteTick(zone);
@@ -220,32 +242,40 @@ class ZoneQueueSync {
   }
 
   void _schedulePush(PlayerState state) {
-    // 没有真实区域就没有可同步的队列：不排定时器，避免纯本地播放
-    // （以及 widget 测试）凭空多出一个待触发的 Timer。
-    final zone = _focusedZone();
-    if (zone == null || !zone.isReal) return;
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
-      unawaited(_push(state));
-    });
-  }
-
-  Future<void> _push(PlayerState state) async {
     if (_disposed || _adopting) return;
     final zone = _focusedZone();
     if (zone == null || !zone.isReal) return;
+    _queuePush(zone.id, state);
+  }
+
+  void _queuePush(String zoneId, PlayerState state) {
+    if (_disposed) return;
+    _pendingPushes.remove(zoneId)?.cancel();
+    _pendingPushes[zoneId] = Timer(const Duration(milliseconds: 250), () {
+      _pendingPushes.remove(zoneId);
+      unawaited(_push(zoneId, state));
+    });
+  }
+
+  Future<void> _push(String zoneId, PlayerState state) async {
+    if (_disposed) return;
+    final isFocused = _focusedZone()?.id == zoneId;
     final ids = state.playlist.map((s) => s.id).toList(growable: false);
     final index =
         ids.isEmpty ? -1 : (state.currentIndex < 0 ? 0 : state.currentIndex);
-    if (listEquals(ids, _pushedSongs) && index == _pushedIndex) return;
-    _pushedSongs = ids;
-    _pushedIndex = index;
+    if (isFocused && listEquals(ids, _pushedSongs) && index == _pushedIndex) {
+      return;
+    }
+    if (isFocused) {
+      _pushedSongs = ids;
+      _pushedIndex = index;
+    }
     try {
       await _ref
           .read(outputApiProvider)
-          .replaceQueue(zone.id, ids, index: index < 0 ? 0 : index);
+          .replaceQueue(zoneId, ids, index: index < 0 ? 0 : index);
     } catch (e) {
-      debugPrint('[ZoneQueueSync] push ${zone.id} failed: $e');
+      debugPrint('[ZoneQueueSync] push $zoneId failed: $e');
     }
   }
 }

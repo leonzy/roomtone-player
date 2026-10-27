@@ -348,7 +348,7 @@ class RoonVolumeButton extends ConsumerWidget {
             Text(
               zone?.isGrouped == true
                   ? ''
-                  : '${zone?.isLocal == false ? zone!.volume : player.volume}',
+                  : '${(zone?.isLocal == false ? zone!.volume : player.volume).round()}',
               style: const TextStyle(fontSize: 11),
             ),
           ],
@@ -416,11 +416,13 @@ class _VolumePanel extends ConsumerWidget {
                 Expanded(
                   child: Slider(
                     value: player.volume.toDouble().clamp(0, 100),
+                    divisions: 100,
                     min: 0,
                     max: 100,
                     onChanged:
-                        (v) =>
-                            ref.read(playerStateProvider.notifier).setVolume(v),
+                        (v) => ref
+                            .read(playerStateProvider.notifier)
+                            .setVolume(v.roundToDouble()),
                   ),
                 ),
               ],

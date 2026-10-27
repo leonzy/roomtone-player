@@ -25,7 +25,7 @@ final localOutputProvider = Provider<LocalOutput>((ref) {
     deviceIdSource: LocalDeviceIdStore(),
   );
 
-  // 焦点变化只影响“是否执行服务端指令”，不发任何网络请求。
+  // 更新界面焦点及本机成员身份；本机媒体不随遥控焦点停止。
   ref.listen<String?>(zoneFocusProvider, (_, next) {
     unawaited(output.setFocusedGroup(next));
   }, fireImmediately: true);

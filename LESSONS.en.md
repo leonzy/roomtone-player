@@ -120,3 +120,10 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 - Evidence: 2026-10-27, base `152c8d0` plus uncommitted worktree. Remote playPlaylist recursively built its queue with autoPlay:true; single-song autoPlay:false still loaded media, and the Web HLS branch could start it. Independently, mobile layout omitted the queue widget.
 - Fix: separate queue projection from media loading and return at the media entry point for remote edits; cancel pending loads immediately on focus change instead of checking only loadedIsPlaying; reject stale zone responses with a generation. Regressions cover async boundaries and queue visibility at 320/446/599px; see [validation](docs/en/roon-zones-20261027.md).
 - Seen 1× (2026-10-27). Status: local uncommitted fix; no claim of native or cross-speaker synchronization validation.
+
+
+### ZONE-003: Control focus must not own local audio lifetime
+
+- On 2026-10-27 the user confirmed that selecting B muted Web. The earlier duplicate-playback pause guard was too broad.
+- Fix: separate audio context/state from UI projection; retain local ownership for completion, device commands and queue sync, while remote edits never load local media. 368 related tests passed; see [zone validation](docs/en/roon-zones-20261027.md).
+- Seen 1× (2026-10-27), local fix; the earlier pause-on-focus rule is revoked.

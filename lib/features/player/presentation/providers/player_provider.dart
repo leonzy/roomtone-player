@@ -89,7 +89,61 @@ class PlayerNotifier extends Notifier<PlayerState> {
   bool _delegating = false; // Notifier 是否已销毁（微任务回调前的安全守卫）
 
   final Random _random = Random();
-  final PlayModeResolver _modeResolver = PlayModeResolver(mode: PlayMode.order);
+  final PlayModeResolver _localModeResolver = PlayModeResolver(
+    mode: PlayMode.order,
+  );
+  final PlayModeResolver _remoteModeResolver = PlayModeResolver(
+    mode: PlayMode.order,
+  );
+  PlayModeResolver get _modeResolver =>
+      _isLocalPlaybackOperation || _remoteZoneId() == null
+          ? _localModeResolver
+          : _remoteModeResolver;
+
+  static final Object _localPlaybackZone = Object();
+  PlayerState? _localPlaybackState;
+  final _localOutputChanges = StreamController<PlayerState>.broadcast(
+    sync: true,
+  );
+  Stream<PlayerState> get localOutputStates => _localOutputChanges.stream;
+  bool get _isLocalPlaybackOperation =>
+      Zone.current[_localPlaybackZone] == this;
+
+  // Audio callbacks belong to this Web renderer, independently of the UI zone.
+  T runOnLocalOutput<T>(T Function() operation) {
+    _localPlaybackState ??= PlayerState.initial;
+    return runZoned(operation, zoneValues: {_localPlaybackZone: this});
+  }
+
+  @override
+  PlayerState get state =>
+      _isLocalPlaybackOperation
+          ? (_localPlaybackState ?? super.state)
+          : super.state;
+
+  @override
+  set state(PlayerState next) {
+    final remote = ref.read(remoteZoneIdProvider);
+    if (_isLocalPlaybackOperation) {
+      final previous = _localPlaybackState;
+      _localPlaybackState = next;
+      if (remote == null) {
+        super.state = next;
+      } else if (!_disposed &&
+          (!identical(previous?.playlist, next.playlist) ||
+              previous?.currentIndex != next.currentIndex)) {
+        _localOutputChanges.add(next);
+      }
+    } else {
+      if (remote == null) _localPlaybackState = next;
+      super.state = next;
+    }
+  }
+
+  int _nextPlayGeneration() =>
+      _isLocalPlaybackOperation || _remoteZoneId() == null
+          ? ++_playGeneration
+          : _playGeneration;
   int _loadGeneration = 0; // 后台加载代次，用于取消过期的异步加载任务
   final QueueLoader _queueLoader = QueueLoader();
   int _playGeneration = 0; // 播放协程代次：用户快速切歌时，旧协程在 await 后发现 gen 变化即退出
@@ -131,12 +185,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _secureStorage = ref.watch(secureStorageProvider);
 
     // 设置通知栏回调
-    _audioHandler.onSkipToNext = () => playNext();
-    _audioHandler.onSkipToPrevious = () => playPrev();
-    _audioHandler.onSongCompleted = _onSongCompleted;
-    _audioHandler.onPlaybackError = _reconnectLiveStream;
-    _audioHandler.onPlaybackCancelled = _cancelLivePlayback;
-    _audioHandler.onPlayRequested = _resumeLivePlayback;
+    _audioHandler.onSkipToNext = () => runOnLocalOutput(playNext);
+    _audioHandler.onSkipToPrevious = () => runOnLocalOutput(playPrev);
+    _audioHandler.onSongCompleted = () => runOnLocalOutput(_onSongCompleted);
+    _audioHandler.onPlaybackError =
+        () => runOnLocalOutput(_reconnectLiveStream);
+    _audioHandler.onPlaybackCancelled =
+        () => runOnLocalOutput(_cancelLivePlayback);
+    _audioHandler.onPlayRequested = () => runOnLocalOutput(_resumeLivePlayback);
     _audioHandler.onToggleFavorite = _toggleFavoriteFromNotification;
 
     // Web HLS 视频回调：playSong 中触发 → 直接创建 video DOM 元素开始播放
@@ -184,31 +240,34 @@ class PlayerNotifier extends Notifier<PlayerState> {
       await playSong(song);
     };
 
-    _initListeners();
+    runOnLocalOutput(_initListeners);
     _initLiveActivityListeners();
     // Web HLS 视频主控模式：监听 video 元素的播放状态，合并到 PlayerState。
     if (kIsWeb) {
       ref.listen<WebVideoPlaybackState>(webVideoPlaybackProvider, (prev, next) {
-        if (!next.isActive || _remoteZoneId() != null) return;
-        state = state.copyWith(
-          isPlaying: next.isPlaying,
-          isBuffering: next.isBuffering,
-          currentTime: next.position,
-          duration: next.duration,
-        );
-        // 视频播放结束 → 触发歌曲完成
-        if (prev != null &&
-            prev.isPlaying &&
-            !next.isPlaying &&
-            next.position > Duration.zero &&
-            next.duration > Duration.zero &&
-            (next.duration - next.position).inSeconds < 2) {
-          _onSongCompleted();
-        }
+        runOnLocalOutput(() {
+          if (!next.isActive || _remoteZoneId() != null) return;
+          state = state.copyWith(
+            isPlaying: next.isPlaying,
+            isBuffering: next.isBuffering,
+            currentTime: next.position,
+            duration: next.duration,
+          );
+          // 视频播放结束 → 触发歌曲完成
+          if (prev != null &&
+              prev.isPlaying &&
+              !next.isPlaying &&
+              next.position > Duration.zero &&
+              next.duration > Duration.zero &&
+              (next.duration - next.position).inSeconds < 2) {
+            _onSongCompleted();
+          }
+        });
       });
     }
     ref.onDispose(() {
       _disposed = true;
+      unawaited(_localOutputChanges.close());
       _audioHandler.onPlaybackError = null;
       _audioHandler.onPlaybackCancelled = null;
       _audioHandler.onPlayRequested = null;
@@ -264,7 +323,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       // （songloft-org/songloft-player#19）
       if (prefs.getAutoPlayOnLaunch() && state.hasSong) {
         debugPrint('[Player] Auto-play on launch enabled, resuming playback');
-        final gen = ++_playGeneration;
+        final gen = _nextPlayGeneration();
         await _playCurrent(gen);
       }
       // 歌词 Provider 的 eager 创建改由根 widget（SongloftApp）负责：player 是
@@ -312,6 +371,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   void _savePlaybackState() {
+    if (_remoteZoneId() != null) return;
     _saveDebounceTimer?.cancel();
     if (_webPlaybackPersistenceDisabled && state.playlist.isNotEmpty) return;
     _saveDebounceTimer = Timer(
@@ -380,14 +440,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// 初始化监听器
   void _initListeners() {
     _initWidgetActionChannel();
-
-    ref.listen(remoteZoneIdProvider, (previous, next) {
-      if (next != null && next != previous) {
-        // Cancel even a source that is still loading and has not emitted playing.
-        ++_playGeneration;
-        unawaited(pauseForServer());
-      }
-    });
 
     // 监听播放位置
     _positionSubscription = _audioHandler.positionStream.listen((position) {
@@ -612,7 +664,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         // （songloft-org/songloft#284）。复用 togglePlay 对 completed 的处理路径。
         {
           debugPrint('[Player] Single loop: reloading current song');
-          final gen = ++_playGeneration;
+          final gen = _nextPlayGeneration();
           unawaited(
             _playCurrent(gen).catchError((e, st) {
               debugPrint('[Player] single loop replay failed: $e');
@@ -652,14 +704,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _playGenerationAtSource != _playGeneration) {
       return;
     }
-    final gen = ++_playGeneration;
+    final gen = _nextPlayGeneration();
     unawaited(_playCurrent(gen, reconnectLive: true));
   }
 
   void _cancelLivePlayback() {
     if (_disposed || !_livePlaybackRequested) return;
     _livePlaybackRequested = false;
-    ++_playGeneration;
+    _nextPlayGeneration();
     state = state.copyWith(
       isPlaying: false,
       isRetrying: false,
@@ -678,7 +730,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (!_livePlaybackRequested ||
         _audioHandler.processingState == ja.ProcessingState.idle ||
         _audioHandler.processingState == ja.ProcessingState.completed) {
-      final gen = ++_playGeneration;
+      final gen = _nextPlayGeneration();
       unawaited(_playCurrent(gen));
       return true;
     }
@@ -689,7 +741,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
   ///
   /// 这种区域的声音由服务端推给它的设备，本机只是遥控器：播放命令要发给
   /// 服务端，而不是在本机起播。
-  String? _remoteZoneId() => ref.read(remoteZoneIdProvider);
+  String? _remoteZoneId() =>
+      _isLocalPlaybackOperation ? null : ref.read(remoteZoneIdProvider);
 
   /// 把播放命令发给焦点区域（本机不出声）。
   Future<void> _delegateTransport(
@@ -775,9 +828,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
     bool localZone = false,
     bool mirrorPlaying = false,
   }) async {
-    if (!localZone) {
-      ++_playGeneration;
-      await pauseForServer();
+    if (localZone &&
+        loadedHasSong &&
+        _localPlaybackState?.currentSong?.id == loadedSongId) {
+      state = _localPlaybackState!.copyWith(
+        isPlaying: loadedIsPlaying,
+        currentTime: loadedPosition,
+      );
+      return;
     }
     if (songs.isEmpty) {
       clearPlaylist();
@@ -797,11 +855,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
         songDuration > Duration.zero && position > songDuration
             ? Duration.zero
             : position;
+    final projection = localZone ? (_localPlaybackState ?? state) : state;
     final previousQueue = PlayQueue(
-      songs: state.playlist,
-      currentIndex: state.currentIndex,
+      songs: projection.playlist,
+      currentIndex: projection.currentIndex,
     );
-    state = state.copyWith(
+    state = projection.copyWith(
       playlist: songs,
       currentIndex: safeIndex,
       currentSong: songs[safeIndex],
@@ -814,12 +873,19 @@ class PlayerNotifier extends Notifier<PlayerState> {
     );
     _onQueueEdited(previousQueue);
 
+    if (localZone && loadedHasSong && loadedSongId == songs[safeIndex].id) {
+      state = state.copyWith(
+        isPlaying: loadedIsPlaying,
+        currentTime: loadedPosition,
+      );
+      return;
+    }
     if (!autoPlay) {
       // 切到不出声的区域：本机必须真的停下来，否则 UI 显示暂停、声音还在。
       // 用 pause 而不是 stop：stop 会把进度清零，切回来就丢了。
       if (localZone) await pauseForServer();
       if (localZone && loadedSongId != songs[safeIndex].id) {
-        final gen = ++_playGeneration;
+        final gen = _nextPlayGeneration();
         await _playCurrent(gen, autoPlay: false);
         if (gen != _playGeneration) return;
         if (safePosition > Duration.zero) await seek(safePosition);
@@ -828,7 +894,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       if (localZone) _savePlaybackState();
       return;
     }
-    final gen = ++_playGeneration;
+    final gen = _nextPlayGeneration();
     await _playCurrent(gen, autoPlay: true);
     if (gen != _playGeneration) return;
     if (safePosition > Duration.zero) {
@@ -877,7 +943,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         clearPlaybackContext: true,
       );
       _onQueueEdited(previousQueue);
-      final gen = ++_playGeneration;
+      final gen = _nextPlayGeneration();
       await _playCurrent(gen, autoPlay: autoPlay);
       if (gen == _playGeneration) {
         _savePlaybackState();
@@ -1034,7 +1100,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       clearPlaybackContext: resolvedContext == null,
     );
 
-    final gen = ++_playGeneration;
+    final gen = _nextPlayGeneration();
     await _playCurrent(gen);
     if (gen == _playGeneration) {
       _savePlaybackState();
@@ -1182,7 +1248,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       if (ps == ja.ProcessingState.idle || ps == ja.ProcessingState.completed) {
         debugPrint('[Player] togglePlay: player $ps, re-loading current song');
         _retryPolicy.recordSuccess();
-        final gen = ++_playGeneration;
+        final gen = _nextPlayGeneration();
         await _playCurrent(gen);
       } else {
         debugPrint('[Player] togglePlay: resuming');
@@ -1231,7 +1297,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
     final ps = _audioHandler.processingState;
     if (ps == ja.ProcessingState.idle || ps == ja.ProcessingState.completed) {
-      final gen = ++_playGeneration;
+      final gen = _nextPlayGeneration();
       await _playCurrent(gen);
     } else {
       await _audioHandler.play();
@@ -1405,7 +1471,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 设置音量 (0-100)
   Future<void> setVolume(double volume) async {
-    final clampedVolume = volume.clamp(0.0, 100.0);
+    final clampedVolume = volume.round().clamp(0, 100).toDouble();
     if (ref.read(dlnaStateProvider).isCasting) {
       await ref
           .read(dlnaStateProvider.notifier)
@@ -1502,7 +1568,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     );
     final result = previousQueue.removeAt(index);
 
-    if (result.shouldStop) {
+    if (result.shouldStop && _remoteZoneId() == null) {
       _audioHandler.stop();
     }
 
@@ -1553,8 +1619,20 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 清空播放列表
   void clearPlaylist() {
+    if (_remoteZoneId() != null) {
+      state = state.copyWith(
+        playlist: [],
+        currentIndex: -1,
+        clearCurrentSong: true,
+        isPlaying: false,
+        currentTime: Duration.zero,
+        duration: Duration.zero,
+        clearPlaybackContext: true,
+      );
+      return;
+    }
     // 清空使尚未完成的切歌也失效，防止旧请求写回新会话的历史。
-    ++_playGeneration;
+    _nextPlayGeneration();
     // 取消之前的预加载
     _prefetchCancelToken?.cancel('operation changed');
     // 递增代次，使正在进行的后台加载自动取消
@@ -2314,7 +2392,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
     // 自增播放代次。旧 _playCurrent 协程在下一次 await 后会发现 gen 变化并退出，
     // 不会再用旧歌的 source 覆盖新歌的 setAudioSource。
-    final gen = ++_playGeneration;
+    final gen = _nextPlayGeneration();
 
     state = state.copyWith(
       hasPriorityNext: _modeResolver.hasPriorityNext,
@@ -2360,7 +2438,16 @@ class PlayerNotifier extends Notifier<PlayerState> {
     bool autoPlay = true,
   }) async {
     // Queue edits for a remote zone must never load audio/video in this browser.
-    if (_delegating || _remoteZoneId() != null) return;
+    if (!_isLocalPlaybackOperation && !_delegating && _remoteZoneId() == null) {
+      return runOnLocalOutput(
+        () =>
+            _playCurrent(gen, reconnectLive: reconnectLive, autoPlay: autoPlay),
+      );
+    }
+    if ((!_isLocalPlaybackOperation && _delegating) ||
+        _remoteZoneId() != null) {
+      return;
+    }
     if (_isSuperseded(gen, 'start')) return;
     final song = state.currentSong;
     if (song == null) {

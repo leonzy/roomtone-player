@@ -39,3 +39,16 @@
 最终检查：363 项通过；本次六个实现/测试文件的 `dart analyze` 无问题；`git diff --check` 通过。Web release 构建通过并嵌入本机 Go dev 二进制。实测窄屏约 440px 可打开、关闭和操作队列；在 Cocoon 焦点下从列表起播英语音频，Cocoon state=playing（song_id=2），Web state=idle、空队列，DOM 中没有 audio/video 元素，且无本地 SongloftAudioHandler.playSong 调用。测试后暂停并恢复原队列/下标/位置。当前听感未要求用户再次确认；不把状态/媒体检查当作新的听感验收。
 
 最终构建的队列内切歌复核：Cocoon song_id=5、state=playing，Web song_id=0、state=idle，当前曲目总时长更新为 04:05；DOM 媒体元素与本地加载日志仍为空。证据：`C:/Users/leon/.local/roomtone-tools/narrow-remote-proof.json`、`narrow-queue-fixed.png`。已通过 API 断言恢复原 8 首队列、下标 3、位置 62.2211278 秒及 paused 状态。
+
+
+## Web 独立播放与整数音量修正（2026-10-27）
+
+用户实际反馈 Web 播放后切到其它区域会静音；另反馈音量显示长小数。此前“选远端立即暂停本机”保护过度，前文相关行为以本节更正。
+
+- 焦点只决定播放器 UI 正在遥控谁，不再停止本机媒体。保留本机独立播放状态和模式；异步音源加载、音频流回调、自然完成及服务端设备指令使用本机上下文，不能误操作当前显示的远端区域。
+- 远端选歌仍只构建其队列并发送远端命令，不加载 Web 音源；切到空队列仅清空投影。返回 Web 使用其实际曲目/进度，不重载仍在播放的源。
+- 本机所属组的设备命令不再由 UI 焦点开关拦截。按区域分别防抖并捕获队列所有者；Web 在后台自动切歌也同步到 Web 组，不能推到当前看的 B。
+- 音量标签四舍五入显示整数，Web 滑杆 100 个步进，本机写入音量也取整数。
+- 回归覆盖：Web 加载中切焦点并改 B 队列、切空区域、后台继续推进/自然下一首、回到 Web 不重载、后台设备暂停/恢复/seek/音量和队列归属。368 项播放/输出/布局测试通过；整数显示/步进有 widget 回归。
+
+实机复验：本机最终嵌入版中 Web 使用原队列播放，音量标签为 11。只将控制焦点切到暂停的 Cocoon 后，Web 服务端仍为 playing（song_id=9，位置 130.503s 并继续增长），Cocoon 保持 paused。用户明确确认“仍然有声音，连续”。随后界面回到 Web 时进度为 03:57，没有回到曲首，音量仍为整数 11。相关 Dart 分析无问题；release Web 和 Go 嵌入构建通过。用户当前播放选择保留。证据：本机工具目录 web-independent-live-a.json、web-independent-volume-fixed.png。

@@ -28,6 +28,7 @@ import 'package:songloft_flutter/features/settings/presentation/providers/settin
 import 'package:songloft_flutter/main.dart';
 import 'package:songloft_flutter/features/output/presentation/providers/zone_focus_provider.dart';
 import 'package:songloft_flutter/features/playback/presentation/providers/zone_queue_sync.dart';
+import 'package:songloft_flutter/features/playback/presentation/providers/local_output_provider.dart';
 import 'package:songloft_flutter/features/playback/presentation/providers/playback_socket_provider.dart';
 import 'package:songloft_flutter/features/output/data/output_api.dart';
 import 'package:songloft_flutter/features/output/domain/output_models.dart';
@@ -45,6 +46,8 @@ class _Audio implements SongloftAudioHandler {
   final seeks = <Duration>[];
   Completer<void>? playGate;
   int pauses = 0;
+  int stops = 0;
+  final positions = StreamController<Duration>.broadcast(sync: true);
   @override
   VoidCallback? onSongCompleted;
   @override
@@ -54,7 +57,7 @@ class _Audio implements SongloftAudioHandler {
   @override
   Future<bool> Function()? onPlayRequested;
   @override
-  Stream<Duration> get positionStream => const Stream.empty();
+  Stream<Duration> get positionStream => positions.stream;
   @override
   Stream<Duration?> get durationStream => const Stream.empty();
   @override
@@ -78,9 +81,14 @@ class _Audio implements SongloftAudioHandler {
   }
 
   @override
+  Future<void> play() async {}
+  @override
   Future<void> setVolume(double volume) async {}
   @override
-  Future<void> stop() async => onPlaybackCancelled?.call();
+  Future<void> stop() async {
+    stops++;
+    onPlaybackCancelled?.call();
+  }
 
   @override
   Future<void> pause() async {
@@ -96,6 +104,8 @@ class _Audio implements SongloftAudioHandler {
 
 class _RemoteApi implements OutputApi {
   final queues = <List<int>>[];
+  final queueZones = <String>[];
+  final queueIndices = <int>[];
   final pendingQueues = <String, Completer<OutputStatus>>{};
   @override
   Future<OutputStatus> getQueue(String groupId) =>
@@ -107,11 +117,18 @@ class _RemoteApi implements OutputApi {
     int index = 0,
   }) async {
     queues.add(List.of(songIds));
+    queueZones.add(groupId);
+    queueIndices.add(index);
     return const OutputStatus();
   }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _LocalIdentity extends LocalDeviceIdNotifier {
+  @override
+  String? build() => 'web';
 }
 
 class _Outputs extends OutputController {
@@ -239,6 +256,7 @@ void main() {
       overrides: [
         audioHandlerProvider.overrideWithValue(audio),
         outputApiProvider.overrideWithValue(remoteApi),
+        localDeviceIdProvider.overrideWith(_LocalIdentity.new),
         playbackEventsProvider.overrideWith((ref) => const Stream.empty()),
         outputControllerProvider.overrideWith(_Outputs.new),
         secureStorageProvider.overrideWithValue(_Storage()),
@@ -257,6 +275,7 @@ void main() {
 
   tearDown(() async {
     container.dispose();
+    await audio.positions.close();
     await dlna.completed.close();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -288,23 +307,95 @@ void main() {
     },
   );
 
+  test('remote focus and queue edits preserve a pending Web load', () async {
+    audio.playGate = Completer<void>();
+    final loading = player.playPlaylist([_song(1)]);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(audio.attempted, [1]);
+    container.read(remoteZoneIdProvider.notifier).set('cocoon');
+    await player.adoptZoneQueue([_song(2)], mirrorPlaying: true);
+    await player.playPlaylist([_song(3)]);
+    expect(audio.pauses, 0);
+    expect(audio.stops, 0);
+    audio.playGate!.complete();
+    await loading;
+    expect(player.loadedIsPlaying, isTrue);
+    expect(player.loadedSongId, 1);
+    expect(container.read(playerStateProvider).currentSong?.id, 3);
+    expect(audio.attempted, [1]);
+  });
+
   test(
-    'remote focus cancels a pending local load before playing is reported',
+    'Web keeps its own next track and position while controlling B',
     () async {
-      audio.playGate = Completer<void>();
-      final loading = player.playPlaylist([_song(1)]);
+      await player.playPlaylist([_song(1), _song(2)]);
+      container.read(remoteZoneIdProvider.notifier).set('b');
+      await player.adoptZoneQueue([
+        _song(3),
+      ], position: const Duration(seconds: 7));
+      audio.positions.add(const Duration(seconds: 42));
+      expect(player.loadedPosition, const Duration(seconds: 42));
+      expect(
+        container.read(playerStateProvider).currentTime,
+        const Duration(seconds: 7),
+      );
+      audio.onSongCompleted!();
       await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(audio.attempted, [1, 2]);
+      expect(player.loadedSongId, 2);
+      expect(container.read(playerStateProvider).currentSong?.id, 3);
+      expect(
+        (container.read(outputControllerProvider.notifier) as _Outputs).actions,
+        isEmpty,
+      );
+      expect(audio.pauses, 0);
+    },
+  );
+
+  test(
+    'empty remote queue does not clear Web audio and returning does not restart it',
+    () async {
+      await player.playPlaylist([_song(1)]);
+      container.read(remoteZoneIdProvider.notifier).set('empty');
+      await player.adoptZoneQueue([]);
+      expect(container.read(playerStateProvider).playlist, isEmpty);
+      expect(player.loadedSongId, 1);
+      expect(player.loadedIsPlaying, isTrue);
+      expect(audio.stops, 0);
+      audio.positions.add(const Duration(seconds: 42));
+      container.read(remoteZoneIdProvider.notifier).set(null);
+      await player.adoptZoneQueue([_song(1)], localZone: true, autoPlay: true);
       expect(audio.attempted, [1]);
-      expect(player.loadedIsPlaying, isFalse);
-      container.read(remoteZoneIdProvider.notifier).set('cocoon');
-      expect(audio.pauses, greaterThan(0));
-      await player.adoptZoneQueue([_song(2)], mirrorPlaying: true);
-      audio.playGate!.complete();
-      await loading;
-      expect(player.loadedIsPlaying, isFalse);
-      expect(container.read(playerStateProvider).currentSong?.id, 2);
+      expect(
+        container.read(playerStateProvider).currentTime,
+        const Duration(seconds: 42),
+      );
       expect(container.read(playerStateProvider).isPlaying, isTrue);
-      expect(audio.attempted, [1]);
+    },
+  );
+
+  test(
+    'server transport operates Web without changing the focused remote zone',
+    () async {
+      await player.playPlaylist([_song(1)]);
+      container.read(remoteZoneIdProvider.notifier).set('b');
+      await player.adoptZoneQueue([_song(2)], mirrorPlaying: true);
+      await player.runOnLocalOutput(player.pauseForServer);
+      expect(player.loadedIsPlaying, isFalse);
+      expect(container.read(playerStateProvider).isPlaying, isTrue);
+      await player.runOnLocalOutput(player.resumeForServer);
+      await player.runOnLocalOutput(
+        () => player.seek(const Duration(seconds: 12)),
+      );
+      await player.runOnLocalOutput(() => player.setVolume(10.589));
+      expect(player.loadedIsPlaying, isTrue);
+      expect(audio.seeks.last, const Duration(seconds: 12));
+      expect(player.runOnLocalOutput(() => player.currentState.volume), 11);
+      expect(container.read(playerStateProvider).currentSong?.id, 2);
+      expect(
+        (container.read(outputControllerProvider.notifier) as _Outputs).actions,
+        isEmpty,
+      );
     },
   );
 
@@ -342,6 +433,52 @@ void main() {
         2,
       ]);
       expect(audio.attempted, isEmpty);
+    },
+  );
+
+  test(
+    'background Web queue push retains its owner across a focus switch',
+    () async {
+      final outputs =
+          container.read(outputControllerProvider.notifier) as _Outputs;
+      outputs.setGroups([
+        OutputGroup.fromJson({
+          'id': 'web-zone',
+          'name': 'Web',
+          'members': [
+            {'player_id': 'web'},
+          ],
+        }),
+        OutputGroup.fromJson({
+          'id': 'b',
+          'name': 'B',
+          'members': [
+            {'player_id': 'raop:b'},
+          ],
+        }),
+      ]);
+      await container.read(zoneFocusProvider.notifier).focus('web-zone');
+      final provider = Provider<ZoneQueueSync>((ref) {
+        final sync = ZoneQueueSync(ref);
+        ref.onDispose(sync.dispose);
+        return sync;
+      });
+      container.read(provider).start();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await player.playPlaylist([_song(1), _song(2)]);
+      final stops = audio.stops;
+      await container.read(zoneFocusProvider.notifier).focus('b');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      audio.onSongCompleted!();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(player.loadedSongId, 2);
+      expect(player.loadedIsPlaying, isTrue);
+      expect(audio.stops, stops);
+      expect(remoteApi.queueZones, isNotEmpty);
+      expect(remoteApi.queueZones.every((id) => id == 'web-zone'), isTrue);
+      expect(remoteApi.queues.last, [1, 2]);
+      expect(remoteApi.queueIndices.last, 1);
+      expect(container.read(playerStateProvider).playlist, isEmpty);
     },
   );
 

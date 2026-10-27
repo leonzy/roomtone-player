@@ -225,15 +225,10 @@ class LocalOutput with WidgetsBindingObserver {
     if (_transport.connected.value) _onConnectedChanged();
   }
 
-  /// 切换焦点区域。焦点不含本机时静默丢弃服务端指令。
+  /// 焦点只影响界面；此连接上的设备指令始终作用于本机所属区域。
   Future<void> setFocusedGroup(String? groupId) async {
     focusedGroupId.value = groupId;
     final generation = ++_focusGeneration;
-    if (groupId == null) {
-      _takeover = false;
-      _setServerControlled(false);
-      return;
-    }
     final id = _deviceId;
     if (id == null) {
       _takeover = false;
@@ -242,7 +237,7 @@ class LocalOutput with WidgetsBindingObserver {
     try {
       final groups = await _membership.groupsContaining(id);
       if (_disposed || generation != _focusGeneration) return;
-      _takeover = groups.contains(groupId);
+      _takeover = groups.isNotEmpty;
       if (!_takeover) _setServerControlled(false);
     } catch (_) {
       if (_disposed || generation != _focusGeneration) return;
@@ -299,7 +294,7 @@ class LocalOutput with WidgetsBindingObserver {
     if (!(_transport?.send(buildRegisterMessage()) ?? false)) return;
     _registered = true;
     _scheduleReport();
-    unawaited(_ensureFocus());
+    unawaited(_refreshFocusMembership());
   }
 
   void _scheduleReport() {

@@ -330,7 +330,7 @@ void main() {
       await transport.close();
     });
 
-    test('焦点区域不含本机时静默丢弃服务端指令', () async {
+    test('控制其它区域时仍执行发给本机的服务端指令', () async {
       final transport = _FakeTransport();
       final audio = _FakeAudio();
       final output = _buildOutput(
@@ -346,8 +346,8 @@ void main() {
       transport.emit(<String, dynamic>{'cmd': 'pause'});
       await _flush();
 
-      expect(audio.pauseCalls, 0);
-      expect(output.isServerControlled, isFalse);
+      expect(audio.pauseCalls, 1);
+      expect(output.isServerControlled, isTrue);
 
       await output.dispose();
       await transport.close();
