@@ -193,6 +193,7 @@ class LocalOutput with WidgetsBindingObserver {
   bool _lifecycleObserved = false;
   int _focusGeneration = 0;
   int _playToken = 0;
+  Future<bool>? _pendingLoad;
 
   /// 服务端时钟 - 本地时钟的估计值（本地 = 服务端 + offset）。
   Duration _serverOffset = Duration.zero;
@@ -367,7 +368,15 @@ class LocalOutput with WidgetsBindingObserver {
         final position = Duration(
           milliseconds: _asInt(message['position_ms']) ?? 0,
         );
-        unawaited(_audio.load(songId, position: position));
+        _pendingLoad = _audio
+            .load(songId, position: position)
+            .then(
+              (_) => true,
+              onError: (Object error, StackTrace stack) {
+                debugPrint('[LocalOutput] load failed: $error');
+                return false;
+              },
+            );
       case 'play':
         _setServerControlled(true);
         unawaited(_playAt(_asInt(message['play_at_ms'])));
@@ -406,6 +415,8 @@ class LocalOutput with WidgetsBindingObserver {
 
   Future<void> _playAt(int? playAtMs) async {
     final token = ++_playToken;
+    final load = _pendingLoad;
+    if (load != null && !await load) return;
     if (playAtMs != null) {
       final localPlayAt = playAtMs + _serverOffset.inMilliseconds;
       final delayMs = localPlayAt - _now().millisecondsSinceEpoch;

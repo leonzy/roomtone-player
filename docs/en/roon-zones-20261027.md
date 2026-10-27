@@ -53,3 +53,13 @@ Live recheck: the final local embedded build played the original Web queue and s
 - Explicit server stop invalidates pending local media loads. Changing control focus still leaves Web playback independent.
 - Added popover transition and stop-during-load regressions. All 370 related playback/output/layout tests passed; changed-file Dart analysis and release Web build passed.
 - Actual local UI confirmed the transfer dialog replaces the volume panel and closing it returns to the page. End-to-end transfer to a busy target was not completed: the dining speaker disconnected and Cocoon first returned SETUP 500. The user requested no more playback during retry; all test outputs were stopped. This transfer and its listening result are not marked passed.
+
+
+## Bidirectional hardware transfer and Web queue takeover (2026-10-28)
+
+- Embedded a816851 / ea947cd: Cocoon (song 5) and Web (song 2) played independently before transferring Cocoon to busy Web. Cocoon became idle and Web continued song 5. The user confirmed only Web was audible and normal.
+- Cocoon then played song 2 while Web continued song 5. Reverse transfer left Web idle and Cocoon advancing song 5; the user confirmed only Cocoon was audible, continuously. Both transfer dialogs closed without exposing the volume panel.
+- Additional issue: Web load used playSong, appending the transferred song to its stale queue and pushing it back to the server. It now reads the complete authoritative queue for its persistent local device membership, checks the requested current song, and replaces local queue/index. Generation checks cancel reads after stop; play waits for load instead of resuming the old song during slow reads.
+- All 373 related tests passed, including complete queue replacement, stop during queue fetch, and load/play ordering with cancellation. Changed-file Dart analysis and release Web build passed. Evidence is in the local tools directory: transfer-busy-start.json, transfer-cocoon-to-web.json, transfer-web-to-cocoon.json and transfer-queue-final-tests.log.
+
+Final embedded hardware check: Web played song 13 from its original 8-song queue while Cocoon played song 2 from the 6-song English queue. UI transfer Cocoon→Web passed assertions: Web song_id=2, playing, full queue [5,2,3,4,7,6], current=1; Cocoon idle. UI showed all 6 songs and advancing position (72.604s). Evidence: transfer-complete-queue-live.json / transfer-complete-queue-fixed.png. Test playback was then stopped and original Web/Cocoon queue contents and indices restored without resuming playback.

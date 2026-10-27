@@ -132,3 +132,8 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 ### ZONE-004: Wait for the old popover before opening its replacement
 
 - 2026-10-28: Opening transfer directly from the volume panel left the old overlay behind. A surviving page now waits for popover dismissal before opening transfer. Widget and actual UI checks passed. Explicit device stop also cancels pending loads; changing focus does not stop output. Seen 1×.
+
+
+### ZONE-005: Server load must adopt the complete zone queue
+
+- 2026-10-28 hardware transfer exposed playSong appending the source track to a stale queue and syncing it back. Load now reads and validates its authoritative zone queue before replacement; play waits for load and stop invalidates pending results. All 373 related tests passed. Seen 1×.

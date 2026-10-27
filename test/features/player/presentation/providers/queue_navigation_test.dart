@@ -18,6 +18,8 @@ import 'package:songloft_flutter/features/dlna/domain/dlna_state.dart';
 import 'package:songloft_flutter/features/dlna/data/dlna_service.dart';
 import 'package:songloft_flutter/features/dlna/presentation/providers/dlna_provider.dart';
 import 'package:songloft_flutter/features/library/presentation/providers/favorite_provider.dart';
+import 'package:songloft_flutter/features/library/data/songs_api.dart';
+import 'package:songloft_flutter/features/library/presentation/providers/songs_provider.dart';
 import 'package:songloft_flutter/features/player/domain/playback_context.dart';
 import 'package:songloft_flutter/features/player/domain/playback_source.dart';
 import 'package:songloft_flutter/features/player/domain/player_state.dart';
@@ -102,7 +104,19 @@ class _Audio implements SongloftAudioHandler {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
+class _ServerSongs extends SongsApi {
+  _ServerSongs(super.dio);
+  @override
+  Future<List<Song>> getSongsByIds(List<int> ids) async =>
+      ids.map(_song).toList();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 class _RemoteApi implements OutputApi {
+  List<OutputGroup> groups = const [];
+  @override
+  Future<List<OutputGroup>> listGroups() async => groups;
   final queues = <List<int>>[];
   final queueZones = <String>[];
   final queueIndices = <int>[];
@@ -256,6 +270,7 @@ void main() {
       overrides: [
         audioHandlerProvider.overrideWithValue(audio),
         outputApiProvider.overrideWithValue(remoteApi),
+        songsApiProvider.overrideWithValue(_ServerSongs(dio)),
         localDeviceIdProvider.overrideWith(_LocalIdentity.new),
         playbackEventsProvider.overrideWith((ref) => const Stream.empty()),
         outputControllerProvider.overrideWith(_Outputs.new),
@@ -284,6 +299,67 @@ void main() {
         );
     await temporaryDirectory.delete(recursive: true);
   });
+
+  test(
+    'server load replaces stale Web queue with the complete zone queue',
+    () async {
+      await player.playPlaylist([_song(90), _song(91)]);
+      remoteApi.groups = [
+        OutputGroup.fromJson({
+          'id': 'web-zone',
+          'members': [
+            {'player_id': 'web'},
+          ],
+        }),
+      ];
+      remoteApi.pendingQueues['web-zone'] =
+          Completer<OutputStatus>()..complete(
+            OutputStatus.fromJson({
+              'queue': {
+                'items': [1, 2, 3],
+                'current': 1,
+              },
+            }),
+          );
+      await player.runOnLocalOutput(
+        () => player.loadForServer(2, position: const Duration(seconds: 30)),
+      );
+      expect(player.currentState.playlist.map((s) => s.id), [1, 2, 3]);
+      expect(player.currentState.currentIndex, 1);
+      expect(player.loadedSongId, 2);
+      expect(audio.seeks.last, const Duration(seconds: 30));
+    },
+  );
+
+  test(
+    'stop while reading the server queue cannot revive Web playback',
+    () async {
+      remoteApi.groups = [
+        OutputGroup.fromJson({
+          'id': 'web-zone',
+          'members': [
+            {'player_id': 'web'},
+          ],
+        }),
+      ];
+      final gate = Completer<OutputStatus>();
+      remoteApi.pendingQueues['web-zone'] = gate;
+      final pending = player.runOnLocalOutput(() => player.loadForServer(2));
+      await Future<void>.delayed(Duration.zero);
+      await player.runOnLocalOutput(player.stopForServer);
+      gate.complete(
+        OutputStatus.fromJson({
+          'queue': {
+            'items': [1, 2, 3],
+            'current': 1,
+          },
+        }),
+      );
+      await pending;
+      expect(audio.played, isEmpty);
+      expect(player.loadedHasSong, isFalse);
+    },
+  );
 
   test(
     'remote playlist and single-song playback never load browser audio',

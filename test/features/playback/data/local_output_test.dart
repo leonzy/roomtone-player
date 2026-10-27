@@ -39,6 +39,7 @@ class _FakeTransport implements LocalOutputTransport {
 class _FakeAudio implements LocalAudio {
   int? loadedSongId;
   Duration? loadedPosition;
+  Completer<void>? loadGate;
   int playCalls = 0;
   int pauseCalls = 0;
   final List<Duration> seekCalls = <Duration>[];
@@ -71,6 +72,7 @@ class _FakeAudio implements LocalAudio {
     loadedSongId = songId;
     loadedPosition = position;
     hasSong = true;
+    await loadGate?.future;
   }
 
   @override
@@ -286,6 +288,40 @@ void main() {
       expect(timers.latest.isActive, isFalse, reason: 'dispose 必须停掉心跳');
       await transport.close();
     });
+
+    test(
+      'play waits for the current load and stop cancels the waiting play',
+      () async {
+        final transport = _FakeTransport();
+        final audio = _FakeAudio()..loadGate = Completer<void>();
+        final output = _buildOutput(
+          transport: transport,
+          audio: audio,
+          membership: _FakeMembership(<String>{'g1'}),
+        );
+        transport.setConnected(true);
+        await output.start();
+        await output.setFocusedGroup('g1');
+        transport.emit(<String, dynamic>{'cmd': 'load', 'song_id': 42});
+        transport.emit(<String, dynamic>{'cmd': 'play'});
+        await _flush();
+        expect(audio.playCalls, 0);
+        transport.emit(<String, dynamic>{'cmd': 'stop'});
+        audio.loadGate!.complete();
+        await _flush();
+        expect(audio.playCalls, 0);
+        audio.loadGate = Completer<void>();
+        transport.emit(<String, dynamic>{'cmd': 'load', 'song_id': 43});
+        transport.emit(<String, dynamic>{'cmd': 'play'});
+        await _flush();
+        expect(audio.playCalls, 0);
+        audio.loadGate!.complete();
+        await _flush();
+        expect(audio.playCalls, 1);
+        await output.dispose();
+        await transport.close();
+      },
+    );
 
     test('服务端指令 load/play/pause/seek/volume 映射到 audio', () async {
       final transport = _FakeTransport();

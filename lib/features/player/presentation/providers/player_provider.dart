@@ -35,6 +35,8 @@ import '../../../library/presentation/providers/songs_provider.dart';
 import '../../../output/presentation/providers/output_provider.dart';
 import '../../../output/presentation/providers/remote_zone_provider.dart';
 import '../../../playlist/data/playlist_api.dart';
+import '../../../playback/presentation/providers/local_output_provider.dart'
+    show localDeviceIdProvider;
 import '../../../playlist/presentation/providers/playlist_provider.dart';
 import '../../domain/playback_context.dart';
 import '../../domain/player_state.dart';
@@ -1276,8 +1278,41 @@ class PlayerNotifier extends Notifier<PlayerState> {
     int songId, {
     Duration position = Duration.zero,
   }) async {
-    final song = await ref.read(songsApiProvider).getSong(songId);
-    await playSong(song, autoPlay: false);
+    final gen = _nextPlayGeneration();
+    final deviceId = ref.read(localDeviceIdProvider);
+    final api = ref.read(outputApiProvider);
+    final groups = await api.listGroups();
+    if (_disposed || gen != _playGeneration) return;
+    final group =
+        groups.where((g) => g.memberIds.contains(deviceId)).firstOrNull;
+    if (group == null) throw StateError('Local output has no server zone');
+    final status = await api.getQueue(group.id);
+    if (_disposed || gen != _playGeneration) return;
+    final ids = status.queue.items;
+    final index = status.queue.current;
+    if (index < 0 || index >= ids.length || ids[index] != songId) return;
+    final songs = await ref.read(songsApiProvider).getSongsByIds(ids);
+    if (_disposed || gen != _playGeneration) return;
+    if (songs.length != ids.length ||
+        !songs.indexed.every((entry) => entry.$2.id == ids[entry.$1])) {
+      throw StateError('Server queue contains unavailable songs');
+    }
+    _playbackResumeState.clear();
+    _modeResolver.onQueueChanged();
+    final previousQueue = PlayQueue(
+      songs: state.playlist,
+      currentIndex: state.currentIndex,
+    );
+    state = state.copyWith(
+      playlist: songs,
+      currentIndex: index,
+      currentSong: songs[index],
+      hasPriorityNext: false,
+      clearPlaybackContext: true,
+    );
+    _onQueueEdited(previousQueue);
+    await _playCurrent(gen, autoPlay: false);
+    if (_disposed || gen != _playGeneration) return;
     if (position > Duration.zero) await seek(position);
   }
 
