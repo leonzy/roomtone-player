@@ -26,6 +26,13 @@ import 'package:songloft_flutter/features/player/presentation/providers/player_p
 import 'package:songloft_flutter/features/settings/data/settings_api.dart';
 import 'package:songloft_flutter/features/settings/presentation/providers/settings_provider.dart';
 import 'package:songloft_flutter/main.dart';
+import 'package:songloft_flutter/features/output/presentation/providers/zone_focus_provider.dart';
+import 'package:songloft_flutter/features/playback/presentation/providers/zone_queue_sync.dart';
+import 'package:songloft_flutter/features/playback/presentation/providers/playback_socket_provider.dart';
+import 'package:songloft_flutter/features/output/data/output_api.dart';
+import 'package:songloft_flutter/features/output/domain/output_models.dart';
+import 'package:songloft_flutter/features/output/presentation/providers/output_provider.dart';
+import 'package:songloft_flutter/features/output/presentation/providers/remote_zone_provider.dart';
 import 'package:songloft_flutter/l10n/app_localizations_zh.dart';
 import 'package:songloft_flutter/l10n/l10n_holder.dart';
 import 'package:songloft_flutter/shared/models/song.dart';
@@ -37,6 +44,7 @@ class _Audio implements SongloftAudioHandler {
   final failedIds = <int>{};
   final seeks = <Duration>[];
   Completer<void>? playGate;
+  int pauses = 0;
   @override
   VoidCallback? onSongCompleted;
   @override
@@ -75,11 +83,54 @@ class _Audio implements SongloftAudioHandler {
   Future<void> stop() async => onPlaybackCancelled?.call();
 
   @override
-  Future<void> pause() async => onPlaybackCancelled?.call();
+  Future<void> pause() async {
+    pauses++;
+    onPlaybackCancelled?.call();
+  }
+
   @override
   Future<void> seek(Duration position) async => seeks.add(position);
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _RemoteApi implements OutputApi {
+  final queues = <List<int>>[];
+  final pendingQueues = <String, Completer<OutputStatus>>{};
+  @override
+  Future<OutputStatus> getQueue(String groupId) =>
+      pendingQueues[groupId]?.future ?? Future.value(const OutputStatus());
+  @override
+  Future<OutputStatus> replaceQueue(
+    String groupId,
+    List<int> songIds, {
+    int index = 0,
+  }) async {
+    queues.add(List.of(songIds));
+    return const OutputStatus();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _Outputs extends OutputController {
+  final actions = <String>[];
+  @override
+  OutputState build() => const OutputState();
+  void setGroups(List<OutputGroup> groups) =>
+      state = OutputState(groups: groups);
+  @override
+  Future<OutputStatus?> transport(
+    String groupId,
+    String action, {
+    double? position,
+    String? repeat,
+    bool? shuffle,
+  }) async {
+    actions.add('$groupId:$action');
+    return const OutputStatus();
+  }
 }
 
 class _Storage implements SecureStorageService {
@@ -153,6 +204,7 @@ void main() {
   late _Audio audio;
   late _DlnaTransport dlna;
   late PlayerNotifier player;
+  late _RemoteApi remoteApi;
   late Directory temporaryDirectory;
 
   setUp(() async {
@@ -182,9 +234,13 @@ void main() {
           const MethodChannel('plugins.flutter.io/path_provider'),
           (_) async => temporaryDirectory.path,
         );
+    remoteApi = _RemoteApi();
     container = ProviderContainer(
       overrides: [
         audioHandlerProvider.overrideWithValue(audio),
+        outputApiProvider.overrideWithValue(remoteApi),
+        playbackEventsProvider.overrideWith((ref) => const Stream.empty()),
+        outputControllerProvider.overrideWith(_Outputs.new),
         secureStorageProvider.overrideWithValue(_Storage()),
         appPreferencesProvider.overrideWith((ref) async => preferences),
         dioProvider.overrideWithValue(dio),
@@ -209,6 +265,85 @@ void main() {
         );
     await temporaryDirectory.delete(recursive: true);
   });
+
+  test(
+    'remote playlist and single-song playback never load browser audio',
+    () async {
+      container.read(remoteZoneIdProvider.notifier).set('cocoon');
+      await player.playPlaylist([_song(1), _song(2)], startIndex: 1);
+      expect(
+        container.read(playerStateProvider).duration,
+        const Duration(seconds: 180),
+      );
+      expect(container.read(playerStateProvider).currentTime, Duration.zero);
+      await player.playSong(_song(3));
+      expect(audio.attempted, isEmpty);
+      expect(remoteApi.queues.length, 2);
+      expect(remoteApi.queues.first, [1, 2]);
+      expect(remoteApi.queues.last, contains(3));
+      expect(
+        (container.read(outputControllerProvider.notifier) as _Outputs).actions,
+        ['cocoon:play', 'cocoon:play'],
+      );
+    },
+  );
+
+  test(
+    'remote focus cancels a pending local load before playing is reported',
+    () async {
+      audio.playGate = Completer<void>();
+      final loading = player.playPlaylist([_song(1)]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(audio.attempted, [1]);
+      expect(player.loadedIsPlaying, isFalse);
+      container.read(remoteZoneIdProvider.notifier).set('cocoon');
+      expect(audio.pauses, greaterThan(0));
+      await player.adoptZoneQueue([_song(2)], mirrorPlaying: true);
+      audio.playGate!.complete();
+      await loading;
+      expect(player.loadedIsPlaying, isFalse);
+      expect(container.read(playerStateProvider).currentSong?.id, 2);
+      expect(container.read(playerStateProvider).isPlaying, isTrue);
+      expect(audio.attempted, [1]);
+    },
+  );
+
+  test(
+    'slow previous zone response cannot replace the current zone queue',
+    () async {
+      final outputs =
+          container.read(outputControllerProvider.notifier) as _Outputs;
+      outputs.setGroups([
+        for (final id in ['a', 'b'])
+          OutputGroup.fromJson({
+            'id': id,
+            'name': id,
+            'members': [
+              {'player_id': 'raop:$id'},
+            ],
+          }),
+      ]);
+      remoteApi.pendingQueues['a'] = Completer<OutputStatus>();
+      await container.read(zoneFocusProvider.notifier).focus('a');
+      final syncProvider = Provider<ZoneQueueSync>((ref) {
+        final sync = ZoneQueueSync(ref);
+        ref.onDispose(sync.dispose);
+        return sync;
+      });
+      container.read(syncProvider).start();
+      await container.read(zoneFocusProvider.notifier).focus('b');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await player.playPlaylist([_song(2)]);
+      remoteApi.pendingQueues['a']!.complete(const OutputStatus());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(container.read(remoteZoneIdProvider), 'b');
+      expect(container.read(playerStateProvider).currentSong?.id, 2);
+      expect(container.read(playerStateProvider).playlist.map((s) => s.id), [
+        2,
+      ]);
+      expect(audio.attempted, isEmpty);
+    },
+  );
 
   for (final mode in PlayMode.values) {
     test('live completion stays on station in $mode, preserving priority', () {

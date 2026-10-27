@@ -17,7 +17,6 @@ import '../../features/library/presentation/providers/favorite_provider.dart';
 import '../../features/player/domain/player_state.dart';
 import '../../features/player/presentation/providers/player_provider.dart';
 import '../../features/player/presentation/widgets/desktop_player.dart';
-import '../../features/player/presentation/widgets/mini_player.dart';
 import '../../features/player/presentation/widgets/playlist_drawer.dart';
 import '../../features/player/presentation/widgets/side_player.dart';
 
@@ -410,7 +409,7 @@ class _ShellLayoutState extends ConsumerState<ShellLayout> {
     final screenType = context.screenType;
     switch (screenType) {
       case ScreenType.mobile:
-        return const MiniPlayer();
+        return const DesktopPlayer();
       case ScreenType.tablet:
       case ScreenType.desktop:
         return const DesktopPlayer();

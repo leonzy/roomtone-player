@@ -104,7 +104,12 @@ class AdaptiveScaffold extends StatelessWidget {
     final useCapsule = ext?.navigationStyle == 'capsule';
 
     return Scaffold(
-      body: body,
+      body: Stack(
+        children: [
+          Positioned.fill(child: body),
+          if (playlistDrawer != null) Positioned.fill(child: playlistDrawer!),
+        ],
+      ),
       extendBody: useCapsule && allowExtendBody,
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,

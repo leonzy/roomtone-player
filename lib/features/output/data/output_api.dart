@@ -15,6 +15,25 @@ class OutputApi {
 
   final Dio dio;
 
+  Future<Map<String, dynamic>> sleepTimer(
+    String groupId, {
+    int? minutes,
+  }) async {
+    try {
+      final path = '$_groupBase/$groupId/sleep';
+      final response =
+          minutes == null
+              ? await dio.get<Map<String, dynamic>>(path)
+              : await dio.post<Map<String, dynamic>>(
+                path,
+                data: {'minutes': minutes},
+              );
+      return response.data ?? {};
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   String get _base => '${AppConfig.apiPrefix}/players';
   String get _groupBase => '${AppConfig.apiPrefix}/groups';
   String get _playbackBase => '${AppConfig.apiPrefix}/playback';

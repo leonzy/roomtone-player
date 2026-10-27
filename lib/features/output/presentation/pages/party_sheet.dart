@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../domain/output_models.dart';
 import '../providers/output_provider.dart';
+import '../widgets/zone_display.dart';
 
 /// 派对面板（F4）。
 ///
@@ -67,7 +68,9 @@ class _PartySheetState extends ConsumerState<PartySheet> {
 
   String _groupName(List<OutputGroup> groups, String id) {
     for (final g in groups) {
-      if (g.id == id) return g.isSolo ? '单机播放' : g.name;
+      if (g.id == id) {
+        return outputGroupLabel(g, ref.read(outputControllerProvider));
+      }
     }
     return id;
   }
@@ -135,7 +138,7 @@ class _PartySheetState extends ConsumerState<PartySheet> {
                                   _selected.remove(g.id);
                                 }
                               }),
-                          title: Text(g.isSolo ? '单机播放' : g.name),
+                          title: Text(outputGroupLabel(g, state)),
                           subtitle: Text(
                             '${g.members.length} 台设备'
                             '${g.isPlaying ? ' · 播放中' : ''}'
@@ -313,7 +316,7 @@ class _PartySheetState extends ConsumerState<PartySheet> {
                   (g) => ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(g.isSolo ? '单机播放' : g.name),
+                    title: Text(outputGroupLabel(g, state)),
                     subtitle: Text('${g.members.length} 台设备'),
                     trailing: TextButton(
                       onPressed:

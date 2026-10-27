@@ -1,27 +1,18 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/backend/run_mode_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/url_helper.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/favorite_button.dart';
-import '../../../settings/presentation/providers/song_cache_provider.dart';
 import '../../domain/player_state.dart';
 import '../providers/player_provider.dart';
 import '../utils/full_player_route.dart';
-import '../utils/player_song_actions.dart';
-import 'play_controls.dart';
 import 'progress_bar.dart';
-import 'audio_track_control.dart';
 import 'capsule_mini_player.dart';
-import 'equalizer_panel.dart';
-import 'popup_controls.dart';
-import 'volume_control.dart';
-import '../../../dlna/presentation/widgets/cast_button.dart';
 import '../../../output/presentation/widgets/zone_button.dart';
+import '../../../output/presentation/widgets/roon_controls.dart';
 
 /// 桌面端底部播放器栏
 class DesktopPlayer extends ConsumerWidget {
@@ -37,11 +28,38 @@ class DesktopPlayer extends ConsumerWidget {
     final useCapsule = ext?.navigationStyle == 'capsule';
 
     // 胶囊模式：浮起玻璃胶囊条，由 CapsuleMiniPlayer 统一渲染。
-    // 提前返回，省掉下面整棵 90px 底栏的构建（含三个 Expanded 与封面解码）。
+    // 提前返回，省掉下面整棵 104px 底栏的构建（含三个 Expanded 与封面解码）。
     if (useCapsule) return const CapsuleMiniPlayer();
 
+    if (MediaQuery.sizeOf(context).width < 700) {
+      return Material(
+        color: theme.colorScheme.surface,
+        child: SizedBox(
+          height: 156,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 72,
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildSongInfo(context, state)),
+                      const ZoneButton(compact: true),
+                      const RoonVolumeButton(),
+                    ],
+                  ),
+                ),
+                Expanded(child: _buildPlayControls(context, state, notifier)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final bar = Container(
-      height: 90,
+      height: 104,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
@@ -64,8 +82,6 @@ class DesktopPlayer extends ConsumerWidget {
               child: Row(
                 children: [
                   // 最左：区域入口（宽屏显示区域名，窄屏只留图标 + 状态点）
-                  ZoneButton(compact: MediaQuery.sizeOf(context).width < 1400),
-                  const SizedBox(width: 12),
                   // 左侧：歌曲信息
                   Expanded(flex: 3, child: _buildSongInfo(context, state)),
                   // 中间：播放控制
@@ -74,10 +90,10 @@ class DesktopPlayer extends ConsumerWidget {
                     child: _buildPlayControls(context, state, notifier),
                   ),
                   // 右侧：工具栏
-                  Expanded(
-                    flex: 3,
-                    child: _buildToolbar(context, state, notifier),
-                  ),
+                  const SizedBox(width: 24),
+                  const ZoneButton(),
+                  const SizedBox(width: 12),
+                  const RoonVolumeButton(),
                 ],
               ),
             ),
@@ -86,7 +102,7 @@ class DesktopPlayer extends ConsumerWidget {
       ),
     );
 
-    // 标准模式：90px 底栏（含 border-top）
+    // 标准模式：104px 底栏（含 border-top）
     return bar;
   }
 
@@ -213,16 +229,41 @@ class DesktopPlayer extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 控制按钮
-        PlayControls(
-          isPlaying: state.isPlaying,
-          hasPrev: state.hasPrev,
-          hasNext: state.hasNext,
-          isBuffering: state.showBufferingIndicator,
-          onPlay: notifier.togglePlay,
-          onPause: notifier.togglePlay,
-          onPrev: notifier.playPrev,
-          onNext: notifier.playNext,
-          size: 40,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const RoonSignalButton(),
+            IconButton(
+              tooltip: '上一首',
+              onPressed: state.hasPrev ? notifier.playPrev : null,
+              icon: const Icon(Icons.skip_previous, size: 26),
+            ),
+            IconButton(
+              tooltip: state.isPlaying ? '暂停' : '播放',
+              onPressed: notifier.togglePlay,
+              icon:
+                  state.showBufferingIndicator
+                      ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Icon(
+                        state.isPlaying ? Icons.pause : Icons.play_arrow,
+                        size: 38,
+                      ),
+            ),
+            IconButton(
+              tooltip: '下一首',
+              onPressed: state.hasNext ? notifier.playNext : null,
+              icon: const Icon(Icons.skip_next, size: 26),
+            ),
+            IconButton(
+              tooltip: '播放队列',
+              onPressed: notifier.togglePlaylistDrawer,
+              icon: const Icon(Icons.queue_music, size: 22),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         // 时间显示
@@ -235,12 +276,16 @@ class DesktopPlayer extends ConsumerWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            Text(
-              ' / ',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: 12),
+            Expanded(
+              child: ClickableProgressBar(
+                position: state.currentTime,
+                duration: state.duration,
+                onSeek: notifier.seek,
+                height: 3,
               ),
             ),
+            const SizedBox(width: 12),
             Text(
               Formatters.formatDuration(state.duration.inSeconds.toDouble()),
               style: theme.textTheme.bodySmall?.copyWith(
@@ -250,221 +295,6 @@ class DesktopPlayer extends ConsumerWidget {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildToolbar(
-    BuildContext context,
-    PlayerState state,
-    PlayerNotifier notifier,
-  ) {
-    final theme = Theme.of(context);
-
-    final volume = ResponsiveVolumeControl(
-      volume: state.volume,
-      onVolumeChanged: notifier.setVolume,
-    );
-
-    // 音量之后的次要操作按钮
-    final actions = <Widget>[
-      // 均衡器（依赖 libmpv，Web 无 libmpv 不生效，故 Web 隐藏）
-      if (!kIsWeb)
-        IconButton(
-          onPressed: () => showEqualizerSheet(context),
-          icon: const Icon(Icons.equalizer_rounded, size: 20),
-          tooltip: AppLocalizations.of(context).playerEqualizer,
-          visualDensity: VisualDensity.compact,
-        ),
-      // 投屏
-      const CastButton(iconSize: 20, visualDensity: VisualDensity.compact),
-      // 音轨切换（多音频轨时显示，单轨自动隐藏）；本行兄弟均为 compact，故显式对齐
-      const AudioTrackControl(visualDensity: VisualDensity.compact),
-      // 睡眠定时
-      _buildSleepTimerButton(context, state, notifier, theme),
-      // 歌词按钮
-      _buildLyricsButton(context, state, theme),
-      // 播放列表
-      IconButton(
-        onPressed: notifier.togglePlaylistDrawer,
-        icon: Icon(
-          Icons.queue_music_rounded,
-          size: 20,
-          color: state.showPlaylistDrawer ? theme.colorScheme.primary : null,
-        ),
-        tooltip: AppLocalizations.of(context).playerPlaylist,
-        visualDensity: VisualDensity.compact,
-      ),
-      // 缓存 / 歌曲信息（收进溢出菜单，避免图标行过挤）。Consumer 局部取 ref，
-      // 不改 _buildToolbar 签名。
-      Consumer(
-        builder: (context, ref, _) {
-          final song = state.currentSong;
-          if (song == null) return const SizedBox.shrink();
-          ref.watch(songCacheProvider);
-          final runMode = ref.watch(runModeProvider);
-          final canCache = canCacheLocally(song, runMode: runMode);
-          final isCached = ref
-              .read(songCacheProvider.notifier)
-              .isCached(song.id);
-          final l10n = AppLocalizations.of(context);
-          return PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, size: 20),
-            tooltip: l10n.songCacheInfo,
-            onSelected: (value) {
-              switch (value) {
-                case 'cache_song':
-                  if (isCached) {
-                    removeSongFromDevice(context, ref, song);
-                  } else {
-                    cacheSongToDevice(context, ref, song);
-                  }
-                case 'song_info':
-                  showSongInfoDialog(
-                    context,
-                    ref,
-                    song,
-                    playbackSource: state.playbackSource,
-                  );
-              }
-            },
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem(
-                    value: 'song_info',
-                    child: ListTile(
-                      leading: const Icon(Icons.info_outline_rounded),
-                      title: Text(l10n.songCacheInfo),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  if (canCache)
-                    PopupMenuItem(
-                      value: 'cache_song',
-                      child: ListTile(
-                        leading: Icon(
-                          isCached
-                              ? Icons.download_done_rounded
-                              : Icons.download_for_offline_outlined,
-                        ),
-                        title: Text(
-                          isCached
-                              ? l10n.songCacheRemove
-                              : l10n.songCacheCacheSong,
-                        ),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                ],
-          );
-        },
-      ),
-    ];
-
-    // 窗口较窄（如平板布局 / 缩小的桌面窗口）时，固定尺寸的按钮会超出
-    // Expanded(flex:3) 分配的宽度导致 RenderFlex 溢出。这里按可用宽度分档：
-    // - 空间充足：内联音量滑块 + 全部按钮（原布局）
-    // - 空间紧张：整体等比缩小并让音量退化为弹出图标，保证任意宽度都不溢出
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 300) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildPlayModeButton(context, state, notifier, theme),
-              _buildSpeedButton(context, state, notifier, theme),
-              Flexible(child: volume),
-              ...actions,
-            ],
-          );
-        }
-        return FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerRight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildPlayModeButton(context, state, notifier, theme),
-              _buildSpeedButton(context, state, notifier, theme),
-              // 无界约束下 ResponsiveVolumeControl 自动退化为弹出图标
-              volume,
-              ...actions,
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 构建播放模式按钮（使用自定义弹出层）
-  Widget _buildPlayModeButton(
-    BuildContext context,
-    PlayerState state,
-    PlayerNotifier notifier,
-    ThemeData theme,
-  ) {
-    return PopupPlayModeControl(
-      playMode: state.playMode,
-      onPlayModeChanged: notifier.setPlayMode,
-    );
-  }
-
-  /// 构建播放速度按钮（使用自定义弹出层）
-  Widget _buildSpeedButton(
-    BuildContext context,
-    PlayerState state,
-    PlayerNotifier notifier,
-    ThemeData theme,
-  ) {
-    return PopupSpeedControl(
-      speed: state.speed,
-      onSpeedChanged: notifier.setSpeed,
-    );
-  }
-
-  /// 构建睡眠定时按钮（使用自定义弹出层）
-  Widget _buildSleepTimerButton(
-    BuildContext context,
-    PlayerState state,
-    PlayerNotifier notifier,
-    ThemeData theme,
-  ) {
-    return PopupSleepTimerControl(
-      status: state.sleepTimer,
-      isLive: state.currentSong?.isLive ?? false,
-      onSetDuration: notifier.setSleepTimerByDuration,
-      onSetAfterSongs: notifier.setSleepTimerAfterSongs,
-      onCancel: notifier.cancelSleepTimer,
-    );
-  }
-
-  /// 构建歌词按钮
-  Widget _buildLyricsButton(
-    BuildContext context,
-    PlayerState state,
-    ThemeData theme,
-  ) {
-    final hasSong = state.hasSong;
-    final hasLyrics = hasSong && state.currentSong?.lyricUrl != null;
-
-    return IconButton(
-      onPressed: hasSong ? () => openFullPlayer(context) : null,
-      icon: Icon(
-        Icons.lyrics_rounded,
-        size: 20,
-        color:
-            hasLyrics ||
-                    theme
-                            .extension<SongloftThemeExtension>()
-                            ?.increaseContrast ==
-                        true
-                ? null
-                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-      ),
-      tooltip: AppLocalizations.of(context).playerLyrics,
-      visualDensity: VisualDensity.compact,
     );
   }
 }

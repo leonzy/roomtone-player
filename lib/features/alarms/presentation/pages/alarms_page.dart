@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/utils/responsive_snackbar.dart';
 import '../../../output/presentation/providers/output_provider.dart';
+import '../../../output/presentation/widgets/zone_display.dart';
 import '../../../playlist/domain/playlist.dart';
 import '../../../playlist/presentation/providers/playlist_provider.dart';
 import '../../domain/alarm_models.dart';
@@ -308,7 +309,7 @@ class _AlarmEditorDialogState extends ConsumerState<_AlarmEditorDialog> {
         const <Playlist>[];
     final targets = <String, String>{};
     for (final g in output.groups) {
-      targets[g.id] = g.isSolo ? '单机播放（${g.id}）' : g.name;
+      targets[g.id] = outputGroupLabel(g, output);
     }
 
     return AlertDialog(

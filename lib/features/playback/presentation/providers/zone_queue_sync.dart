@@ -40,11 +40,13 @@ class ZoneQueueSync {
 
   /// 接管进行中：这期间本地队列还是上一个区域的，不能推给新区域。
   bool _adopting = false;
+  int _adoptGeneration = 0;
 
   Timer? _debounce;
 
   /// 远端区域在播放时按秒推进进度条（服务端不推送位置）。
   Timer? _remoteTick;
+  Timer? _identityRefresh;
   bool _disposed = false;
 
   void start() {
@@ -77,6 +79,7 @@ class ZoneQueueSync {
     _disposed = true;
     _debounce?.cancel();
     _remoteTick?.cancel();
+    _identityRefresh?.cancel();
   }
 
   ZoneEntry? _focusedZone() {
@@ -97,10 +100,17 @@ class ZoneQueueSync {
         .read(remoteZoneIdProvider.notifier)
         .set(zone != null && zone.isReal && !zone.isLocal ? zone.id : null);
     if (zone == null) {
+      ++_adoptGeneration;
+      _adoptedFor = null;
+      _adopting = false;
+      _debounce?.cancel();
       _syncRemoteTick(null);
       return;
     }
     if (!zone.isReal) {
+      ++_adoptGeneration;
+      _adopting = false;
+      _debounce?.cancel();
       // 本机还没注册成服务端区域：没有可同步的队列，保持本地队列。
       _adoptedFor = null;
       _syncRemoteTick(zone);
@@ -111,8 +121,10 @@ class ZoneQueueSync {
       return;
     }
     _adoptedFor = zone.id;
-    await _adopt(zone);
-    _syncRemoteTick(zone);
+    _debounce?.cancel();
+    final generation = ++_adoptGeneration;
+    await _adopt(zone, generation);
+    if (generation == _adoptGeneration) _syncRemoteTick(zone);
   }
 
   /// 远端区域在播放时启动本地进度推进；回到本机区域或暂停时停掉。
@@ -139,22 +151,22 @@ class ZoneQueueSync {
   }
 
   /// 切到某个区域：把该区域的队列接管为本地队列。
-  Future<void> _adopt(ZoneEntry zone) async {
+  Future<void> _adopt(ZoneEntry zone, int generation) async {
     _adopting = true;
     try {
       final status = await _ref.read(outputApiProvider).getQueue(zone.id);
-      if (_disposed) return;
+      if (_disposed || generation != _adoptGeneration) return;
       final ids = status.queue.items;
       if (ids.isEmpty) {
         _pushedSongs = const <int>[];
         _pushedIndex = -1;
         await _ref
             .read(playerStateProvider.notifier)
-            .adoptZoneQueue(const <Song>[]);
+            .adoptZoneQueue(const <Song>[], localZone: zone.isLocal);
         return;
       }
       final songs = await _ref.read(songsApiProvider).getSongsByIds(ids);
-      if (_disposed) return;
+      if (_disposed || generation != _adoptGeneration) return;
       _pushedSongs = ids;
       _pushedIndex = status.queue.current;
       await _ref
@@ -170,15 +182,30 @@ class ZoneQueueSync {
           );
     } catch (e) {
       // 拉不到就允许下次输出刷新时重试。
-      _adoptedFor = null;
+      if (generation == _adoptGeneration) _adoptedFor = null;
       debugPrint('[ZoneQueueSync] adopt ${zone.id} failed: $e');
     } finally {
-      _adopting = false;
+      if (generation == _adoptGeneration) _adopting = false;
     }
   }
 
   /// 焦点区域不含本机时，把服务端状态镜像到播放器 UI（本机不出声）。
   void _onPlaybackEvent(PlaybackEvent event) {
+    if (const {
+      'speaker_seen',
+      'group_changed',
+      'member_changed',
+    }.contains(event.type)) {
+      _identityRefresh?.cancel();
+      _identityRefresh = Timer(const Duration(milliseconds: 80), () {
+        if (!_disposed) {
+          unawaited(
+            _ref.read(outputControllerProvider.notifier).refresh(silent: true),
+          );
+        }
+      });
+      return;
+    }
     if (event.type != 'state') return;
     final zone = _focusedZone();
     if (zone == null || !zone.isReal || zone.isLocal) return;

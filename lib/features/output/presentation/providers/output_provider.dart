@@ -306,6 +306,21 @@ class OutputController extends Notifier<OutputState> {
   Future<bool> setVolume(String id, int volume, {bool muted = false}) =>
       _run(() => _api.setVolume(id, volume: volume, muted: muted));
 
+  /// Change one speaker while retaining the group's base and other speakers.
+  Future<bool> setMemberVolume(String groupId, String playerId, int volume) =>
+      _run(() async {
+        final current = await _api.getGroupVolume(groupId);
+        if (!current.members.any((m) => m.playerId == playerId)) {
+          throw StateError('区域成员已改变，请重新打开音量面板');
+        }
+        await _api.updateMember(
+          groupId,
+          playerId,
+          volumeOffset: volume.clamp(0, 100) - current.volume,
+        );
+        await _api.setVolume(playerId, volume: volume.clamp(0, 100));
+      });
+
   Future<bool> createGroup(List<String> memberIds, {String name = ''}) => _run(
     () => _api.createGroup(memberIds: memberIds, name: name),
     notice: '已创建同步组',

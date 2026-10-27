@@ -37,7 +37,7 @@ import 'package:songloft_flutter/shared/models/song.dart';
 ///
 /// 覆盖三件事：pill 几何（高 64 / 全圆角）与材质（大屏真毛玻璃、手机毛玻璃回退）、
 /// 大屏工具栏的常驻/收纳分界（睡眠定时与倍速必须收进「更多」，且点开真的能出抽屉）、
-/// 以及标准模式大屏底栏不受影响（仍是 90px + border-top）。
+/// 以及标准模式大屏底栏不受影响（仍是 104px + border-top）。
 ///
 /// 进度条单独覆盖：轨道 / 填充整宽贴着 pill 顶边（miot 插件 / Lynx 客户端的形态），
 /// 两端由 pill 轮廓顺着顶角弧线裁掉 —— 大屏档靠 `GlassSurface` 的 `ClipRRect`，
@@ -367,7 +367,7 @@ void main() {
         themeOverride: theme,
       );
       final standardButton = tester.widget<IconButton>(
-        find.widgetWithIcon(IconButton, Icons.lyrics_rounded),
+        find.widgetWithIcon(IconButton, Icons.queue_music),
       );
       expect(standardButton.onPressed, isNotNull);
       expect((standardButton.icon as Icon).color, isNull);
@@ -787,7 +787,7 @@ void main() {
     expect(find.byTooltip('下一首'), findsOneWidget);
   });
 
-  testWidgets('标准模式大屏仍是 90px 底栏 + border-top（不受胶囊重构影响）', (tester) async {
+  testWidgets('标准模式大屏仍是 104px 底栏 + border-top（不受胶囊重构影响）', (tester) async {
     final theme = ThemeData(
       extensions: const [SongloftThemeExtension(navigationStyle: 'standard')],
     );
@@ -802,7 +802,7 @@ void main() {
 
     final bar = tester.widget<Container>(
       find.byWidgetPredicate(
-        (w) => w is Container && w.constraints?.maxHeight == 90,
+        (w) => w is Container && w.constraints?.maxHeight == 104,
       ),
     );
     final decoration = bar.decoration! as BoxDecoration;

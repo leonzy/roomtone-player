@@ -189,7 +189,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // Web HLS 视频主控模式：监听 video 元素的播放状态，合并到 PlayerState。
     if (kIsWeb) {
       ref.listen<WebVideoPlaybackState>(webVideoPlaybackProvider, (prev, next) {
-        if (!next.isActive) return;
+        if (!next.isActive || _remoteZoneId() != null) return;
         state = state.copyWith(
           isPlaying: next.isPlaying,
           isBuffering: next.isBuffering,
@@ -381,6 +381,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
   void _initListeners() {
     _initWidgetActionChannel();
 
+    ref.listen(remoteZoneIdProvider, (previous, next) {
+      if (next != null && next != previous) {
+        // Cancel even a source that is still loading and has not emitted playing.
+        ++_playGeneration;
+        unawaited(pauseForServer());
+      }
+    });
+
     // 监听播放位置
     _positionSubscription = _audioHandler.positionStream.listen((position) {
       if (_playGeneration != _playGenerationAtSource) return;
@@ -394,6 +402,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
     // 监听总时长
     _durationSubscription = _audioHandler.durationStream.listen((duration) {
+      if (_remoteZoneId() != null) return;
       if (duration != null) {
         state = state.copyWith(duration: duration);
         // 同时更新通知栏的 duration
@@ -695,7 +704,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// 在远端区域上执行一次“改队列 + 起播”。
   ///
-  /// 先本地改队列（[build] 里传 autoPlay: false，不碰本机音频），再把整条
+  /// 先改队列投影（[_delegating] 阻止加载本机音源），再把整条
   /// 队列推给服务端，最后让服务端起播。顺序不能反：服务端 play 时读的是
   /// 它自己保存的队列。
   Future<void> _runOnRemoteZone(
@@ -708,6 +717,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
     } finally {
       _delegating = false;
     }
+    final song = state.currentSong;
+    state = state.copyWith(
+      currentTime: Duration.zero,
+      duration: Duration(milliseconds: ((song?.duration ?? 0) * 1000).round()),
+    );
     final ids = state.playlist.map((s) => s.id).toList(growable: false);
     if (ids.isEmpty) return;
     final index = state.currentIndex < 0 ? 0 : state.currentIndex;
@@ -761,6 +775,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
     bool localZone = false,
     bool mirrorPlaying = false,
   }) async {
+    if (!localZone) {
+      ++_playGeneration;
+      await pauseForServer();
+    }
     if (songs.isEmpty) {
       clearPlaylist();
       return;
@@ -799,7 +817,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (!autoPlay) {
       // 切到不出声的区域：本机必须真的停下来，否则 UI 显示暂停、声音还在。
       // 用 pause 而不是 stop：stop 会把进度清零，切回来就丢了。
-      if (loadedIsPlaying) await pauseForServer();
+      if (localZone) await pauseForServer();
       if (localZone && loadedSongId != songs[safeIndex].id) {
         final gen = ++_playGeneration;
         await _playCurrent(gen, autoPlay: false);
@@ -1200,11 +1218,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// 服务端接管：暂停本机输出。
   Future<void> pauseForServer() async {
     _loadedPlaying = false;
-    if (!state.hasSong) return;
-    if (kIsWeb && _audioHandler.hlsVideoPrimaryMode) {
-      ref.read(webVideoPlaybackProvider.notifier).pause();
-      return;
-    }
+    // The handler also invalidates pending loads, including HLS video startup.
     await _audioHandler.pause();
   }
 
@@ -2345,6 +2359,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     bool reconnectLive = false,
     bool autoPlay = true,
   }) async {
+    // Queue edits for a remote zone must never load audio/video in this browser.
+    if (_delegating || _remoteZoneId() != null) return;
     if (_isSuperseded(gen, 'start')) return;
     final song = state.currentSong;
     if (song == null) {

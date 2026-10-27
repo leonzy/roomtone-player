@@ -36,11 +36,20 @@ class ZoneEntry {
     required this.members,
     required this.volume,
     this.group,
+    this.memberNames = const <String>[],
   });
 
   /// 真实 group id；本机哨兵为 [kLocalZoneId]。
   final String id;
   final String name;
+  final List<String> memberNames;
+  bool get isGrouped => members.length > 1;
+  List<String> get displayNames =>
+      isGrouped && memberNames.isNotEmpty ? memberNames : <String>[name];
+  String get compactName =>
+      isGrouped && memberNames.isNotEmpty
+          ? '${memberNames.first} + ${members.length - 1}'
+          : name;
 
   /// 图标 key（空串 = 默认图标）。
   final String icon;
@@ -70,6 +79,25 @@ class ZoneEntry {
   bool get isActive => status.isActive;
   bool get canControl => isReal && online;
 }
+
+/// Multi-speaker zones show each member on its own line in selectors.
+class ZoneMemberNames extends StatelessWidget {
+  const ZoneMemberNames({super.key, required this.zone, this.style});
+  final ZoneEntry zone;
+  final TextStyle? style;
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      for (final name in zone.displayNames)
+        Text(name, style: style, maxLines: 1, overflow: TextOverflow.ellipsis),
+    ],
+  );
+}
+
+String outputGroupLabel(OutputGroup group, OutputState state) =>
+    _entryFromGroup(group, state, isLocal: false).compactName;
 
 /// 从输出状态派生区域列表：真实组 + 必要时补一个“本机”哨兵。
 ///
@@ -164,6 +192,7 @@ int compareZoneEntries(ZoneEntry a, ZoneEntry b) {
 
 /// 区域图标：优先服务端白名单 key，其次按本机/单机/多成员给默认图标。
 IconData zoneIconFor(ZoneEntry zone) {
+  if (zone.isGrouped) return Icons.link;
   final mapped = zoneIconKeys[zone.icon];
   if (mapped != null) return mapped;
   if (zone.isLocal) {
@@ -273,6 +302,10 @@ ZoneEntry _entryFromGroup(
     members: group.members,
     volume: _groupVolume(group, state),
     group: group,
+    memberNames:
+        group.members
+            .map((m) => state.playerOf(m.playerId)?.displayName ?? m.playerId)
+            .toList(),
   );
 }
 

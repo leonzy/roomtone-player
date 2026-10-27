@@ -105,3 +105,18 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 - Rule: Design background tints and foreground together. Composite translucent text against its actual background before measuring contrast. Material contrast guarantees on its default surface do not automatically apply to cover overlays. Check consistent missing/failed-cover fallbacks and ensure increased contrast covers dynamic layers.
 - Done right: Shared `PlayerBackdrop` blends tints into the current surface and strengthens the accent against that background. Active lines, translations, romaji, and karaoke share full contrast. Light/dark gradient samples across six built-in palettes and extreme covers passed, alongside all 716 tests, static analysis, and embedded builds. Actual browser song switching and missing/failed-cover comparisons are in the [#523 record](docs/en/issue-523.md). Not run: native outdoor device acceptance.
 - Seen 1× (2026-10-15). Status: experience; uncommitted worktree identity is in the task record. Check Git/CI separately for release inclusion.
+
+### ZONE-001: Speaker renaming requires every zone projection and refresh event
+
+- Scope: output, volume, grouping, transfer, party and alarm UI; parent solo-group/player naming contract; Flutter baseline `152c8d0` plus uncommitted tree.
+- Evidence: on 2026-10-27 the user saved the zone name as “餐厅”, while grouping and volume still showed player.Name factory names. Open dialogs also ignored server speaker_seen identity updates.
+- Fix: synchronize solo zone and device names in both directions, reconcile old aliases on restore/before grouping, use shared display logic, and refresh shared output state on identity events. Multi-speaker zones rename individual members. Checking only the edit dialog is insufficient.
+- Validation: [zone record](docs/en/roon-zones-20261027.md), 35 output tests, backend naming/restore regressions and local Flutter Web. After the user's request to stop playback testing, UI inspection remained paused and does not certify new playback behavior.
+- Seen 1x (2026-10-27). Status: local uncommitted fix; see validation record for runtime artifact.
+
+
+### ZONE-002: Remote queue edits must not load local media
+
+- Evidence: 2026-10-27, base `152c8d0` plus uncommitted worktree. Remote playPlaylist recursively built its queue with autoPlay:true; single-song autoPlay:false still loaded media, and the Web HLS branch could start it. Independently, mobile layout omitted the queue widget.
+- Fix: separate queue projection from media loading and return at the media entry point for remote edits; cancel pending loads immediately on focus change instead of checking only loadedIsPlaying; reject stale zone responses with a generation. Regressions cover async boundaries and queue visibility at 320/446/599px; see [validation](docs/en/roon-zones-20261027.md).
+- Seen 1× (2026-10-27). Status: local uncommitted fix; no claim of native or cross-speaker synchronization validation.

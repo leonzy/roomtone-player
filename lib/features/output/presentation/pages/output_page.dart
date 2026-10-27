@@ -7,6 +7,7 @@ import '../providers/zone_focus_provider.dart';
 import '../providers/output_provider.dart';
 import '../../../alarms/presentation/pages/alarms_page.dart';
 import '../widgets/group_volume.dart';
+import '../widgets/zone_display.dart';
 import '../widgets/power_toggle.dart';
 import 'playback_tuning_sheet.dart';
 import 'eq_sheet.dart';
@@ -250,8 +251,7 @@ class _OutputPageState extends ConsumerState<OutputPage> {
     ),
   );
 
-  /// 按组渲染。单机组（只有自己）标题用"单机播放"，
-  /// 免得用户以为那是自己配过的同步组。
+  /// 所有区域均显示用户设置的名称，多成员区域使用成员摘要。
   List<Widget> _buildGroups(OutputState state) {
     final controller = ref.read(outputControllerProvider.notifier);
     final focusedGroupId = ref.watch(zoneFocusProvider);
@@ -268,7 +268,7 @@ class _OutputPageState extends ConsumerState<OutputPage> {
                 leading: Icon(
                   group.isSolo ? Icons.speaker : Icons.speaker_group,
                 ),
-                title: Text(group.isSolo ? '单机播放' : group.name),
+                title: Text(outputGroupLabel(group, state)),
                 subtitle: Text(_groupSubtitle(group)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,

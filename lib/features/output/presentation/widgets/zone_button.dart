@@ -5,7 +5,7 @@ import '../../../playback/presentation/providers/local_output_provider.dart';
 import '../providers/output_provider.dart';
 import '../providers/zone_focus_provider.dart';
 import 'zone_display.dart';
-import 'zone_picker.dart';
+import 'roon_controls.dart';
 
 /// 播放条常驻的区域入口：图标在上、区域名在下（Roon 底栏样式）。
 ///
@@ -31,7 +31,7 @@ class ZoneButton extends ConsumerWidget {
     );
     final theme = Theme.of(context);
 
-    final name = zone?.name ?? '本机';
+    final name = zone?.compactName ?? '本机';
     final icon = zone == null ? Icons.speaker_rounded : zoneIconFor(zone);
     final offline = zone?.online == false;
     final dotColor =
@@ -45,7 +45,7 @@ class ZoneButton extends ConsumerWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(icon, size: compact ? 18 : 20, color: foreground),
+            Icon(icon, size: compact ? 24 : 32, color: foreground),
             Positioned(
               right: -3,
               bottom: -2,
@@ -93,7 +93,10 @@ class ZoneButton extends ConsumerWidget {
           child: InkWell(
             key: buttonKey,
             borderRadius: BorderRadius.circular(12),
-            onTap: () => showZonePicker(context),
+            onTap: () {
+              ref.read(outputControllerProvider.notifier).refresh(silent: true);
+              showPlayerPopover(context, const RoonZoneList());
+            },
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: compact ? 6 : 8,
