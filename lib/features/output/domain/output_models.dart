@@ -16,16 +16,19 @@ library;
 enum OutputKind {
   local,
   raop,
+  raat,
   dlna;
 
   static OutputKind parse(String? raw) {
     switch (raw) {
       case 'raop':
         return OutputKind.raop;
+      case 'raat':
+        return OutputKind.raat;
       case 'dlna':
         return OutputKind.dlna;
       default:
-        return OutputKind.local;
+        return OutputKind.local; // 未知 kind 回退 local（旧服务端兼容）
     }
   }
 
@@ -34,6 +37,7 @@ enum OutputKind {
   String get label => switch (this) {
     OutputKind.local => '本机',
     OutputKind.raop => 'AirPlay',
+    OutputKind.raat => 'RAAT',
     OutputKind.dlna => 'DLNA',
   };
 
@@ -41,15 +45,29 @@ enum OutputKind {
   bool get isNetwork => this != OutputKind.local;
 }
 
-/// 同步等级：exact 靠 RTP 时间戳对齐，aligned 只能对齐起播。
+/// 同步等级：precise 采样级（RAAT 共享时钟 ±1ms）、exact 靠 RTP 时间戳
+/// 对齐（±20ms）、aligned 只能对齐起播。
 enum SyncTier {
+  precise,
   exact,
   aligned;
 
-  static SyncTier parse(String? raw) =>
-      raw == 'aligned' ? SyncTier.aligned : SyncTier.exact;
+  static SyncTier parse(String? raw) {
+    switch (raw) {
+      case 'aligned':
+        return SyncTier.aligned;
+      case 'precise':
+        return SyncTier.precise;
+      default:
+        return SyncTier.exact; // 未知值安全回退 exact（含旧服务端 null）
+    }
+  }
 
-  String get label => this == SyncTier.exact ? '精确同步' : '起播对齐';
+  String get label => switch (this) {
+    SyncTier.precise => '采样级同步',
+    SyncTier.exact => '精确同步',
+    SyncTier.aligned => '起播对齐',
+  };
 }
 
 /// 信号路径等级：决定区域行三色指示点。
@@ -280,8 +298,9 @@ class OutputDevice {
   /// 能作为播放目标：在线且不在待机。
   bool get usable => online && !standby;
 
-  /// 能进精确同步组：在线、不待机、且设备本身支持精确对齐。
-  bool get exactCapable => usable && caps.syncTier == SyncTier.exact;
+  /// 能进精确同步组：在线、不待机、且设备本身支持精确对齐
+  /// （precise 采样级同步也满足——比 exact 更强）。
+  bool get exactCapable => usable && caps.syncTier != SyncTier.aligned;
 
   /// 名字兜底：mDNS 偶尔只给服务名。
   String get displayName => name.isNotEmpty ? name : id;
