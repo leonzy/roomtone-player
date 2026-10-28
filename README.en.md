@@ -29,26 +29,32 @@ https://github.com/songloft-org/songloft/issues/6
 
 Download the latest version from [GitHub Releases](https://github.com/songloft-org/songloft-player/releases/latest):
 
-Each release includes Chinese and English installation notes. Version history is maintained in the Chinese-only [CHANGELOG.md](CHANGELOG.md), updated automatically after a versioned release succeeds.
+Release bodies contain version changes and installation links to this section. Version history is maintained in the Chinese-only [CHANGELOG.md](CHANGELOG.md), updated automatically after a versioned release succeeds. See the table below for installation instructions.
+
+This repository publishes the standard Flutter client, which connects to a [Songloft server](https://github.com/songloft-org/songloft). Enter the server address and sign in after installation. For local mode with a bundled backend, download `songloft-bundled-*` from the [main project releases](https://github.com/songloft-org/songloft/releases).
+
+Choose a file for your device under **Assets** on the release page. Some packaging formats may be unavailable; check the attached files.
 
 | Platform | Download | Notes |
 |----------|----------|-------|
-| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-standalone.tar.gz) | Self-hosted, configurable backend URL |
-| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-embedded.tar.gz) | Embedded with Go backend on same domain |
-| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.tar.gz) | x64 desktop |
-| | [songloft-linux-x64.deb](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64 |
-| | [songloft-linux-x64.rpm](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64 |
-| | [songloft-linux-x64.AppImage](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.AppImage) | Portable executable |
-| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.zip) | x64 portable |
-| | [songloft-windows-x64.msix](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.msix) | x64 installer |
-| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.dmg) | Universal DMG (Intel/Apple Silicon) |
-| | [songloft-macos.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.zip) | Universal App archive |
-| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 (recommended) |
-| | [songloft-armeabi-v7a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-armeabi-v7a.apk) | ARMv7 |
-| | [songloft-x86_64.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-x86_64.apk) | x86_64 emulator/device |
-| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-ios-nosign.ipa) | Unsigned IPA, install via AltStore/Sideloadly |
+| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-standalone.tar.gz) | Extract to a static server and configure the backend API address; cross-origin hosting requires the backend to allow access from the site |
+| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-embedded.tar.gz) | For same-origin static hosting or a backend embedding build; hides the API address field. Extracting does not automatically replace a running server's frontend |
+| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.tar.gz) | Extract and launch the app, keeping the complete directory |
+| | [songloft-linux-x64.deb](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64; install using your package manager |
+| | [songloft-linux-x64.rpm](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64; install using your package manager |
+| | [songloft-linux-x64.AppImage](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.AppImage) | Make the AppImage executable and run it |
+| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.zip) | x64 portable; extract and launch the app, keeping all files together |
+| | [songloft-windows-x64.msix](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.msix) | x64 installer; install through the system installer |
+| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.dmg) | Universal (Intel/Apple Silicon); open the DMG and drag the app into Applications |
+| | [songloft-macos.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.zip) | Universal (Intel/Apple Silicon); extract the ZIP and move the app into Applications |
+| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 (recommended); download and open the APK, and allow installation when prompted |
+| | [songloft-armeabi-v7a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-armeabi-v7a.apk) | 32-bit ARM; download and open the APK, and allow installation when prompted |
+| | [songloft-x86_64.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-x86_64.apk) | Intel devices/emulators; download and open the APK, and allow installation when prompted |
+| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-ios-nosign.ipa) | Unsigned device build; re-sign with your developer certificate and a provisioning profile for your device before installing |
 
 > Development builds are available at the [dev branch Release](https://github.com/songloft-org/songloft-player/releases/tag/dev).
+
+`patch-*.zip`, `manifest-*.json`, and `version.json` are used by the client's update checker and do not need manual installation.
 
 ## Features
 

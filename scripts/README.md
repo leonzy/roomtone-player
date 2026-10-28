@@ -58,7 +58,7 @@ Android release 构建后执行 `python3 scripts/check-android-preferences-jni.p
 
 推送 tag 后由 `.github/workflows/build-and-release.yml` 自动完成多平台构建和 GitHub Release。
 
-Release 正文使用 `.github/release-notes.md` 中的中英双语安装说明，并追加分类提交记录。版本 tag 发布成功后，独立 job 基于最新 `main` 更新根目录的中文 `CHANGELOG.md` 并提交回仓库；滚动 dev 不写入该文件。不同版本的日志更新串行执行，不触发新一轮构建。
+Release 正文展示自动生成的分类变更记录，`.github/release-notes.md` 仅保留安装说明链接；各平台安装说明统一维护在根目录的 [README.md](../README.md#下载安装) 与 [README.en.md](../README.en.md#download)。版本 tag 发布成功后，独立 job 基于最新 `main` 更新根目录的中文 `CHANGELOG.md` 并提交回仓库；滚动 dev 不写入该文件。不同版本的日志更新串行执行，不触发新一轮构建。
 
 **安全机制**：
 

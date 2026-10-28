@@ -58,7 +58,7 @@ Automates the Flutter frontend version release process. **Unified release contra
 
 After the tag is pushed, `.github/workflows/build-and-release.yml` automatically handles multi-platform builds and GitHub Release creation.
 
-Release bodies use the Chinese and English installation notes in `.github/release-notes.md`, followed by categorized commits. After a version-tag release succeeds, a separate job updates the Chinese-only root `CHANGELOG.md` from the latest `main` and commits it back to the repository. Rolling dev builds do not write this file. Changelog updates for different versions run serially and do not trigger another build.
+Release bodies contain automatically generated, categorized changes, with only installation links in `.github/release-notes.md`. Platform installation instructions are maintained in the root [README.md](../README.md#下载安装) and [README.en.md](../README.en.md#download). After a version-tag release succeeds, a separate job updates the Chinese-only root `CHANGELOG.md` from the latest `main` and commits it back to the repository. Rolling dev builds do not write this file. Changelog updates for different versions run serially and do not trigger another build.
 
 **Safety features**:
 

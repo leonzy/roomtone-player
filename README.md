@@ -29,26 +29,32 @@ https://github.com/songloft-org/songloft/issues/6
 
 从 [GitHub Releases](https://github.com/songloft-org/songloft-player/releases/latest) 下载最新版本：
 
-每次 Release 提供中英双语安装说明；版本变更保存在中文 [CHANGELOG.md](CHANGELOG.md)，在版本发布成功后自动更新。
+Release 正文展示版本变更，并保留本节的安装说明链接；历史记录保存在中文 [CHANGELOG.md](CHANGELOG.md)，在版本发布成功后自动更新。各平台安装说明见下表。
+
+本仓库发布的是需要连接 [Songloft 服务器](https://github.com/songloft-org/songloft)的标准 Flutter 客户端，安装后填写服务器地址并登录。需要内嵌后端的本地模式，请从[主工程 Releases](https://github.com/songloft-org/songloft/releases) 下载 `songloft-bundled-*` 文件。
+
+在 Release 页的 **Assets** 中选择适合设备的文件；部分安装格式可能未提供，以实际附件为准。
 
 | 平台 | 下载链接 | 说明 |
 |------|----------|------|
-| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-standalone.tar.gz) | 独立部署版，支持配置后端地址 |
-| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-embedded.tar.gz) | 嵌入 Go 后端同域部署 |
-| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.tar.gz) | x64 桌面版 |
-| | [songloft-linux-x64.deb](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64 |
-| | [songloft-linux-x64.rpm](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64 |
-| | [songloft-linux-x64.AppImage](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.AppImage) | 免安装可执行文件 |
-| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.zip) | x64 便携版 |
-| | [songloft-windows-x64.msix](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.msix) | x64 安装版 |
-| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.dmg) | Universal DMG (Intel/Apple Silicon) |
-| | [songloft-macos.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.zip) | Universal App 压缩包 |
-| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 设备（推荐） |
-| | [songloft-armeabi-v7a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-armeabi-v7a.apk) | ARMv7 设备 |
-| | [songloft-x86_64.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-x86_64.apk) | x86_64 模拟器/设备 |
-| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-ios-nosign.ipa) | 未签名 IPA，可通过 AltStore/Sideloadly 安装 |
+| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-standalone.tar.gz) | 解压到静态服务器，打开站点后配置后端 API 地址；跨源部署需要后端允许该站点访问 |
+| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-embedded.tar.gz) | 用于同源静态服务或后端嵌入构建，隐藏 API 地址输入；解压不会自动替换已运行的服务器前端 |
+| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.tar.gz) | 解压后运行应用，保留完整目录 |
+| | [songloft-linux-x64.deb](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64，使用系统包管理器安装 |
+| | [songloft-linux-x64.rpm](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64，使用系统包管理器安装 |
+| | [songloft-linux-x64.AppImage](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.AppImage) | 添加执行权限后运行 |
+| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.zip) | x64 便携版，解压后运行应用，保留同目录全部文件 |
+| | [songloft-windows-x64.msix](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.msix) | x64 安装版，按系统提示安装 |
+| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.dmg) | Universal (Intel/Apple Silicon)，打开 DMG 后将应用拖入「应用程序」 |
+| | [songloft-macos.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.zip) | Universal (Intel/Apple Silicon)，解压 ZIP 后将应用移入「应用程序」 |
+| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 设备（推荐），下载并打开 APK，按提示允许安装 |
+| | [songloft-armeabi-v7a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-armeabi-v7a.apk) | 32 位 ARM 设备，下载并打开 APK，按提示允许安装 |
+| | [songloft-x86_64.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-x86_64.apk) | Intel 设备或模拟器，下载并打开 APK，按提示允许安装 |
+| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-ios-nosign.ipa) | 未签名设备包，需使用自己的开发者证书和适用于目标设备的 provisioning profile 重签后安装 |
 
 > 开发版可在 [dev 分支 Release](https://github.com/songloft-org/songloft-player/releases/tag/dev) 获取。
+
+`patch-*.zip`、`manifest-*.json` 和 `version.json` 供客户端检查更新使用，无需手动安装。
 
 ## 功能特性
 

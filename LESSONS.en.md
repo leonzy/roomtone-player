@@ -10,6 +10,14 @@ Include rule, scope, full owner/repo#number, failure/fix commit SHAs, actual val
 
 ## Entries
 
+### AUDIO-005: duplicate interruption listeners alone do not prove failed recovery
+
+- Scope: Flutter audio_session / just_audio interruptions, user cancellation and live recovery, songloft-org/songloft-player#52; baseline `538c228677350fa7c87f74bb5fe12e6e71b7ef56`.
+- Evidence: on 2026-10-26, the initial investigation attributed the reported failure directly to duplicate Handler/just_audio listeners. Line-by-line review found just_audio maintains separate resume intent, and the old Handler passes normal single-interruption recovery with injected events. This does not establish the device root cause. The old Handler does have gaps around repeated begin, unknown end, manual pause, asynchronous pause completion, live recovery and late subscriptions: 14 of 17 isolated old-logic regressions fail and 3 pass.
+- Rule: inspect dependency subscription order, the synchronous part of pause, resume state and the OS shouldResume mapping before explaining symptoms. Give interruptions one owner and clear recovery intent on explicit cancellation/headphone unplug. Injected session boundary tests establish that layer's behavior, not reproduction on a released package or the reporter's device.
+- Done right: the candidate gives the Handler interruption ownership, waits for pause, routes recovery through the live entry point, and prevents recovery after cancellation. Linux x86_64 / Flutter 3.44.8 / Dart 3.12.2 passes all 791 tests and static analysis. See the [#52 record](docs/en/issue-52.md) for code identity, isolation and evidence. Not run: iOS compilation, iPhone video interruptions/background track changes, and other native focus paths. Background track changes still need version/device logs.
+- Seen 1× (2026-10-26). Status: lesson; the user authorized commit, push and an issue reply. Device testing awaits a new package; the reported symptoms are not declared resolved.
+
 ### LYRIC-004: applying the static 7:1 floor to the song-change animation neutralizes the accent
 
 - Scope: Flutter mobile/desktop full player `PlayerBackdrop`, songloft-org/songloft#537; baseline `8fa1d6e` (v2.13.6).

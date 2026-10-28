@@ -615,8 +615,7 @@ jobs:
           ${{ toJSON(steps.changelog.outputs.changes) }}
           CHANGELOG_JSON
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
-          printf 'Songloft Player (Flutter) %s\n\n' "$TAG" > "$NOTES_FILE"
-          cat .github/release-notes.md >> "$NOTES_FILE"
+          cat .github/release-notes.md > "$NOTES_FILE"
           # 保留 Markdown，并用文件传给 gh。
           if [ -s "$RUNNER_TEMP/changelog.md" ]; then
             printf '\n## 更新记录 / Changelog\n\n' >> "$NOTES_FILE"

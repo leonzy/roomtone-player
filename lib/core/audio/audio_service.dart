@@ -124,10 +124,15 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   late final StreamSubscription<ja.PlayerException> _playerErrorSub;
   late final StreamSubscription<Object> _asyncErrorSub;
   StreamSubscription<AudioInterruptionEvent>? _interruptionSub;
+  StreamSubscription<void>? _becomingNoisySub;
+  bool _interruptionActive = false;
+  bool _resumeAfterInterruption = false;
+  Future<void> _interruptionPause = Future.value();
   bool _disposed = false;
 
-  SongloftAudioHandler({ja.AudioPlayer? player})
-    : _player = player ?? ja.AudioPlayer() {
+  SongloftAudioHandler({ja.AudioPlayer? player, AudioSession? audioSession})
+    // 统一处理系统中断与用户取消，避免维护两份独立的恢复意图（#52）。
+    : _player = player ?? ja.AudioPlayer(handleInterruptions: false) {
     // 使用 listen + add 而非 pipe()：pipe() 内部调用 addStream 独占 sink，
     // 导致 super.stop() 等方法无法再调用 playbackState.add()，
     // 退出时抛出 "You cannot add items while items are being added from addStream"。
@@ -198,7 +203,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     });
 
     // 异步初始化 AudioSession（不影响核心功能）
-    _initFuture = _initAudioSession();
+    _initFuture = _initAudioSession(audioSession);
 
     debugPrint('[AudioService] SongloftAudioHandler 初始化完成');
   }
@@ -209,33 +214,62 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// 初始化 AudioSession（异步，失败安全）
-  Future<void> _initAudioSession() async {
+  Future<void> _initAudioSession(AudioSession? audioSession) async {
     try {
-      final session = await AudioSession.instance;
+      final session = audioSession ?? await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
+      if (_disposed) return;
       debugPrint('[AudioService] AudioSession configured');
-      var wasPlayingBeforeInterruption = false;
-      _interruptionSub = session.interruptionEventStream.listen((event) {
-        if (_disposed) return;
-        debugPrint(
-          '[AudioService] Audio interruption: type=${event.type}, begin=${event.begin}',
-        );
-        if (event.begin) {
-          // 中断开始：记录当前播放状态并暂停
-          wasPlayingBeforeInterruption = _player.playing;
-          if (event.type == AudioInterruptionType.pause ||
-              event.type == AudioInterruptionType.unknown) {
-            _player.pause();
-          }
-        } else {
-          // 中断结束：如果之前正在播放，则恢复
-          if (wasPlayingBeforeInterruption && !_stopped) {
-            _player.play();
-          }
-        }
+      _interruptionSub = session.interruptionEventStream.listen(
+        _handleInterruption,
+      );
+      // handleInterruptions=false 也关闭了 just_audio 的耳机拔出处理。
+      _becomingNoisySub = session.becomingNoisyEventStream.listen((_) {
+        if (!_disposed) unawaited(pause());
       });
     } catch (e) {
       debugPrint('[AudioService] AudioSession init failed: $e');
+    }
+  }
+
+  void _handleInterruption(AudioInterruptionEvent event) {
+    if (_disposed) return;
+    debugPrint(
+      '[AudioService] Audio interruption: type=${event.type}, begin=${event.begin}, '
+      'playing=${_player.playing}, ps=${_player.processingState}, '
+      'stopped=$_stopped, resumePending=$_resumeAfterInterruption',
+    );
+    // music 配置下 Android 的 duck 由系统处理，不改变播放/恢复意图。
+    if (event.type == AudioInterruptionType.duck) return;
+    if (event.begin) {
+      if (_interruptionActive) return;
+      final wasPlaying =
+          _resumeAfterInterruption || _player.playing || _liveReconnecting;
+      _interruptionActive = true;
+      _interruptionPause = pause();
+      _resumeAfterInterruption = wasPlaying;
+    } else {
+      if (!_interruptionActive) return;
+      // iOS 的 unknown 结束事件表示没有 shouldResume，必须等待用户主动播放。
+      final resume =
+          _resumeAfterInterruption && event.type == AudioInterruptionType.pause;
+      _interruptionActive = false;
+      _resumeAfterInterruption = resume;
+      debugPrint('[AudioService] interruption ended: resume=$resume');
+      if (resume) {
+        unawaited(_resumeInterruptedPlayback(_loadGeneration));
+      }
+    }
+  }
+
+  Future<void> _resumeInterruptedPlayback(int generation) async {
+    await _interruptionPause;
+    if (!_isCurrentLoad(generation) || _interruptionActive) return;
+    // 经过正常播放入口，直播断流时也可重新加载当前台。
+    try {
+      await play();
+    } catch (e) {
+      debugPrint('[AudioService] interruption resume failed: $e');
     }
   }
 
@@ -400,7 +434,10 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> play() async {
     if (_disposed) return;
+    _resumeAfterInterruption = false;
+    final generation = _loadGeneration;
     if (await onPlayRequested?.call() == true) return;
+    if (_disposed || generation != _loadGeneration) return;
     _stopped = false;
     debugPrint(
       '[AudioService] ▶️ play() 被调用 (before: playing=${_player.playing}, '
@@ -426,6 +463,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> pause() async {
+    _resumeAfterInterruption = false;
     _liveReconnecting = false;
     _loadGeneration++;
     onPlaybackCancelled?.call();
@@ -453,6 +491,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     debugPrint('[AudioService] ⏹️ stop() 被调用');
     // 底层迟到的 ready/completed 事件不能重新建立通知或触发自动切歌。
     _stopped = true;
+    _resumeAfterInterruption = false;
     _liveReconnecting = false;
     _loadGeneration++;
     onPlaybackCancelled?.call();
@@ -696,6 +735,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
     bool autoPlay = true,
   }) async {
     // 确保 stream listeners 已建立；停止或新切歌使本次异步加载失效。
+    _resumeAfterInterruption = false;
     final generation = ++_loadGeneration;
     _stopped = false;
     await _initFuture;
@@ -1321,6 +1361,7 @@ class SongloftAudioHandler extends BaseAudioHandler with SeekHandler {
 
     debugPrint('[AudioService] dispose 开始');
     await _interruptionSub?.cancel();
+    await _becomingNoisySub?.cancel();
     debugPrint('[AudioService] interruption subscription canceled');
     await _processingStateSub.cancel();
     debugPrint('[AudioService] processingState subscription canceled');
