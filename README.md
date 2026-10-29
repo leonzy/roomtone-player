@@ -1,5 +1,7 @@
 # Roomtone Flutter
 
+> Roomtone fork，源自 [Songloft](https://github.com/songloft-org/songloft-player)。原作者署名与许可证保留。
+
 [English](README.en.md) | 中文
 
 [![Build and Release](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml)

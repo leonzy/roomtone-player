@@ -1,5 +1,7 @@
 # Roomtone Player
 
+> Roomtone fork of [Songloft](https://github.com/songloft-org/songloft-player). Original attribution and licenses are preserved.
+
 [中文](README.md) | English
 
 [![Build and Release](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml)
