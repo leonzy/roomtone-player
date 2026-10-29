@@ -1,24 +1,24 @@
-# Songloft Player
+# Roomtone Player
 
 [中文](README.md) | English
 
 [![Build and Release](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml)
-[![GitHub License](https://img.shields.io/github/license/songloft-org/songloft-player)](https://github.com/songloft-org/songloft-player)
-[![GitHub Release](https://img.shields.io/github/v/release/songloft-org/songloft-player)](https://github.com/songloft-org/songloft-player/releases)
-[![Stars](https://img.shields.io/github/stars/songloft-org/songloft-player)](https://github.com/songloft-org/songloft-player/stargazers)
+[![GitHub License](https://img.shields.io/github/license/songloft-org/songloft-player)](https://github.com/leonzy/roomtone-player)
+[![GitHub Release](https://img.shields.io/github/v/release/songloft-org/songloft-player)](https://github.com/leonzy/roomtone-player/releases)
+[![Stars](https://img.shields.io/github/stars/songloft-org/songloft-player)](https://github.com/leonzy/roomtone-player/stargazers)
 
 <p align="center">
-  <strong>🎵 Songloft Player — A cross-platform music player built with Flutter</strong>
+  <strong>🎵 Roomtone Player — A cross-platform music player built with Flutter</strong>
 </p>
 
-Songloft Player is a cross-platform music player built with Flutter, supporting iOS, Android, macOS, Windows, Linux, and Web. Supports **Bundle local mode**: embeds the Go backend directly into the client, no server deployment required.
+Roomtone Player is a cross-platform music player built with Flutter, supporting iOS, Android, macOS, Windows, Linux, and Web. Supports **Bundle local mode**: embeds the Go backend directly into the client, no server deployment required.
 
 Settings → Playback → Keep screen on for lyrics keeps the display awake while viewing lyrics. It is off by default and saved only on this device. Returning to the cover on mobile, leaving the player, or backgrounding the app restores automatic screen sleep. Wide players apply it while lyrics are visible, including when playback is paused. Web support depends on browser capabilities and permission; unavailable or denied requests do not interrupt playback.
 
 <p align="center">
-  <a href="https://github.com/songloft-org/songloft-player">🏠 GitHub</a> •
-  <a href="https://github.com/songloft-org/songloft-player/releases">📥 Download</a> •
-  <a href="https://github.com/songloft-org/songloft-player/issues">💬 Issues</a>
+  <a href="https://github.com/leonzy/roomtone-player">🏠 GitHub</a> •
+  <a href="https://github.com/leonzy/roomtone-player/releases">📥 Download</a> •
+  <a href="https://github.com/leonzy/roomtone-player/issues">💬 Issues</a>
 </p>
 
 ## Screenshots
@@ -27,32 +27,32 @@ https://github.com/songloft-org/songloft/issues/6
 
 ## Download
 
-Download the latest version from [GitHub Releases](https://github.com/songloft-org/songloft-player/releases/latest):
+Download the latest version from [GitHub Releases](https://github.com/leonzy/roomtone-player/releases/latest):
 
 Release bodies contain version changes and installation links to this section. Version history is maintained in the Chinese-only [CHANGELOG.md](CHANGELOG.md), updated automatically after a versioned release succeeds. See the table below for installation instructions.
 
-This repository publishes the standard Flutter client, which connects to a [Songloft server](https://github.com/songloft-org/songloft). Enter the server address and sign in after installation. For local mode with a bundled backend, download `songloft-bundled-*` from the [main project releases](https://github.com/songloft-org/songloft/releases).
+This repository publishes the standard Flutter client, which connects to a [Roomtone server](https://github.com/leonzy/roomtone). Enter the server address and sign in after installation. For local mode with a bundled backend, download `roomtone-bundled-*` from the [main project releases](https://github.com/leonzy/roomtone/releases).
 
 Choose a file for your device under **Assets** on the release page. Some packaging formats may be unavailable; check the attached files.
 
 | Platform | Download | Notes |
 |----------|----------|-------|
-| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-standalone.tar.gz) | Extract to a static server and configure the backend API address; cross-origin hosting requires the backend to allow access from the site |
-| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-embedded.tar.gz) | For same-origin static hosting or a backend embedding build; hides the API address field. Extracting does not automatically replace a running server's frontend |
-| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.tar.gz) | Extract and launch the app, keeping the complete directory |
-| | [songloft-linux-x64.deb](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64; install using your package manager |
-| | [songloft-linux-x64.rpm](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64; install using your package manager |
-| | [songloft-linux-x64.AppImage](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.AppImage) | Make the AppImage executable and run it |
-| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.zip) | x64 portable; extract and launch the app, keeping all files together |
-| | [songloft-windows-x64.msix](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.msix) | x64 installer; install through the system installer |
-| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.dmg) | Universal (Intel/Apple Silicon); open the DMG and drag the app into Applications |
-| | [songloft-macos.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.zip) | Universal (Intel/Apple Silicon); extract the ZIP and move the app into Applications |
-| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 (recommended); download and open the APK, and allow installation when prompted |
-| | [songloft-armeabi-v7a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-armeabi-v7a.apk) | 32-bit ARM; download and open the APK, and allow installation when prompted |
-| | [songloft-x86_64.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-x86_64.apk) | Intel devices/emulators; download and open the APK, and allow installation when prompted |
-| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-ios-nosign.ipa) | Unsigned device build; re-sign with your developer certificate and a provisioning profile for your device before installing |
+| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-web-standalone.tar.gz) | Extract to a static server and configure the backend API address; cross-origin hosting requires the backend to allow access from the site |
+| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-web-embedded.tar.gz) | For same-origin static hosting or a backend embedding build; hides the API address field. Extracting does not automatically replace a running server's frontend |
+| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.tar.gz) | Extract and launch the app, keeping the complete directory |
+| | [songloft-linux-x64.deb](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64; install using your package manager |
+| | [songloft-linux-x64.rpm](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64; install using your package manager |
+| | [songloft-linux-x64.AppImage](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.AppImage) | Make the AppImage executable and run it |
+| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-windows-x64.zip) | x64 portable; extract and launch the app, keeping all files together |
+| | [songloft-windows-x64.msix](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-windows-x64.msix) | x64 installer; install through the system installer |
+| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-macos.dmg) | Universal (Intel/Apple Silicon); open the DMG and drag the app into Applications |
+| | [songloft-macos.zip](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-macos.zip) | Universal (Intel/Apple Silicon); extract the ZIP and move the app into Applications |
+| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 (recommended); download and open the APK, and allow installation when prompted |
+| | [songloft-armeabi-v7a.apk](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-armeabi-v7a.apk) | 32-bit ARM; download and open the APK, and allow installation when prompted |
+| | [songloft-x86_64.apk](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-x86_64.apk) | Intel devices/emulators; download and open the APK, and allow installation when prompted |
+| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-ios-nosign.ipa) | Unsigned device build; re-sign with your developer certificate and a provisioning profile for your device before installing |
 
-> Development builds are available at the [dev branch Release](https://github.com/songloft-org/songloft-player/releases/tag/dev).
+> Development builds are available at the [dev branch Release](https://github.com/leonzy/roomtone-player/releases/tag/dev).
 
 `patch-*.zip`, `manifest-*.json`, and `version.json` are used by the client's update checker and do not need manual installation.
 
@@ -201,7 +201,7 @@ The bundle version embeds the Go backend into the client, so users don't need a 
 
 Usage: On first launch, tap "Use Local Mode" on the login page → select music directory → done. Switch between local/remote mode anytime in settings.
 
-Pre-built bundle packages are available from [songloft main repo Releases](https://github.com/songloft-org/songloft/releases/latest) (`songloft-bundled-*` files).
+Pre-built bundle packages are available from [songloft main repo Releases](https://github.com/leonzy/roomtone/releases/latest) (`roomtone-bundled-*` files).
 
 ## Release
 
@@ -226,13 +226,13 @@ The script will automatically:
 
 ## Backend
 
-**Standard version** requires the [Songloft backend](https://github.com/songloft-org/songloft) service. Default connection: `http://localhost:58091`, configurable on the login page.
+**Standard version** requires the [Roomtone backend](https://github.com/leonzy/roomtone) service. Default connection: `http://localhost:58091`, configurable on the login page.
 
 **Bundle version** embeds the Go backend, no separate server deployment needed. Auto-logs in with admin/admin.
 
 Default credentials: admin / admin
 
-🔗 **Backend GitHub**: [https://github.com/songloft-org/songloft](https://github.com/songloft-org/songloft)
+🔗 **Backend GitHub**: [https://github.com/songloft-org/songloft](https://github.com/leonzy/roomtone)
 
 ## License
 

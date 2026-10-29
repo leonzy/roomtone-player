@@ -1,6 +1,6 @@
 # Liquid Glass 主题（Flutter）
 
-> 基础主题已实现；下文保留原设计结构。姊妹计划：Lynx 端 [液态玻璃主题设计](https://github.com/songloft-org/songloft-player-lynx/blob/main/docs/archive/plans/liquid-glass-theme.md)。后端主题包 `glassColor` 字段见 `songloft-org/songloft` 的 `internal/models/theme_pack.go`。
+> 基础主题已实现；下文保留原设计结构。姊妹计划：Lynx 端 [液态玻璃主题设计](https://github.com/leonzy/roomtone-player-lynx/blob/main/docs/archive/plans/liquid-glass-theme.md)。后端主题包 `glassColor` 字段见 `songloft-org/songloft` 的 `internal/models/theme_pack.go`。
 
 ## 辅助功能设置（2026-10）
 
@@ -16,7 +16,7 @@
 
 ## Context
 
-Songloft Player (Flutter) 使用 `BackdropFilter` + `ImageFilter.blur` 做背景采样模糊，叠加半透明填充、描边和高光。背景模糊不等同于原生液态玻璃的折射；各客户端共享主题包字段，分别实现平台材质。
+Roomtone Player (Flutter) 使用 `BackdropFilter` + `ImageFilter.blur` 做背景采样模糊，叠加半透明填充、描边和高光。背景模糊不等同于原生液态玻璃的折射；各客户端共享主题包字段，分别实现平台材质。
 
 参考：[Beans-Music](https://github.com/XIaodou0416/Beans-Music)（iOS 26 原生 `.glassEffect`，SwiftUI）。本项目在 Flutter 中用 `BackdropFilter(filter: ImageFilter.blur(sigmaX:, sigmaY:))` + `ClipRRect` + 半透 fill + hairline border + sheen 高光实现视觉材质。
 

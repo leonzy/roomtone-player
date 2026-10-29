@@ -14,8 +14,8 @@ import 'widgets/section_card.dart';
 /// 客户端下载页（仅 Web 访问时可达）。
 ///
 /// 按浏览器 User-Agent 推荐匹配当前设备的原生客户端，并列出全部平台：
-/// - 标准版：连接当前服务器（`songloft-org/songloft-player` releases）
-/// - Bundle 版：内嵌后端、无需服务器（`songloft-org/songloft` releases）
+/// - 标准版：连接当前服务器（`leonzy/roomtone-player` releases）
+/// - Bundle 版：内嵌后端、无需服务器（`leonzy/roomtone` releases）
 ///
 /// 下载链接自动套用「设置 → 网络设置」配置的 GitHub 加速代理（[githubProxyProvider]）。
 class ClientDownloadPage extends ConsumerWidget {
@@ -23,52 +23,58 @@ class ClientDownloadPage extends ConsumerWidget {
 
   // release 资产直链前缀
   static const String _standardBase =
-      'https://github.com/songloft-org/songloft-player/releases/latest/download/';
+      AppConfig.isFrontendDev
+          ? 'https://github.com/leonzy/roomtone-player/releases/download/dev/'
+          : 'https://github.com/leonzy/roomtone-player/releases/latest/download/';
   static const String _bundleBase =
-      'https://github.com/songloft-org/songloft/releases/latest/download/';
+      AppConfig.isFrontendDev
+          ? 'https://github.com/leonzy/roomtone/releases/download/dev/'
+          : 'https://github.com/leonzy/roomtone/releases/latest/download/';
 
   // releases 页（兜底：直链资产名变动时仍可手动挑选）
   static const String _standardReleases = AppConfig.frontendReleasesUrl;
   static const String _bundleReleases =
-      'https://github.com/songloft-org/songloft/releases/latest';
+      AppConfig.isFrontendDev
+          ? 'https://github.com/leonzy/roomtone/releases/tag/dev'
+          : 'https://github.com/leonzy/roomtone/releases/latest';
 
   static const List<_ClientAsset> _standardAssets = [
     _ClientAsset(
       os: WebOS.android,
       label: 'Android (ARM64)',
       icon: Icons.android,
-      asset: 'songloft-arm64-v8a.apk',
+      asset: 'roomtone-arm64-v8a.apk',
     ),
     _ClientAsset(
       os: WebOS.android,
       label: 'Android (ARMv7)',
       icon: Icons.android,
-      asset: 'songloft-armeabi-v7a.apk',
+      asset: 'roomtone-armeabi-v7a.apk',
     ),
     _ClientAsset(
       os: WebOS.ios,
       label: 'iOS',
       icon: Icons.phone_iphone,
-      asset: 'songloft-ios-nosign.ipa',
+      asset: 'roomtone-ios-nosign.ipa',
       unsigned: true,
     ),
     _ClientAsset(
       os: WebOS.windows,
       label: 'Windows (x64)',
       icon: Icons.desktop_windows,
-      asset: 'songloft-windows-x64.zip',
+      asset: 'roomtone-windows-x64.zip',
     ),
     _ClientAsset(
       os: WebOS.macos,
       label: 'macOS',
       icon: Icons.laptop_mac,
-      asset: 'songloft-macos.dmg',
+      asset: 'roomtone-macos.dmg',
     ),
     _ClientAsset(
       os: WebOS.linux,
       label: 'Linux (x64)',
       icon: Icons.laptop,
-      asset: 'songloft-linux-x64.tar.gz',
+      asset: 'roomtone-linux-x64.tar.gz',
     ),
   ];
 
@@ -77,38 +83,38 @@ class ClientDownloadPage extends ConsumerWidget {
       os: WebOS.android,
       label: 'Android (ARM64)',
       icon: Icons.android,
-      asset: 'songloft-bundled-android-arm64-v8a.apk',
+      asset: 'roomtone-bundled-android-arm64-v8a.apk',
     ),
     _ClientAsset(
       os: WebOS.android,
       label: 'Android (ARMv7)',
       icon: Icons.android,
-      asset: 'songloft-bundled-android-armeabi-v7a.apk',
+      asset: 'roomtone-bundled-android-armeabi-v7a.apk',
     ),
     _ClientAsset(
       os: WebOS.ios,
       label: 'iOS',
       icon: Icons.phone_iphone,
-      asset: 'songloft-bundled-ios-nosign.ipa',
+      asset: 'roomtone-bundled-ios-nosign.ipa',
       unsigned: true,
     ),
     _ClientAsset(
       os: WebOS.windows,
       label: 'Windows (x64)',
       icon: Icons.desktop_windows,
-      asset: 'songloft-bundled-windows-x64.zip',
+      asset: 'roomtone-bundled-windows-x64.zip',
     ),
     _ClientAsset(
       os: WebOS.macos,
       label: 'macOS',
       icon: Icons.laptop_mac,
-      asset: 'songloft-bundled-macos.zip',
+      asset: 'roomtone-bundled-macos.zip',
     ),
     _ClientAsset(
       os: WebOS.linux,
       label: 'Linux (x64)',
       icon: Icons.laptop,
-      asset: 'songloft-bundled-linux-x64.tar.gz',
+      asset: 'roomtone-bundled-linux-x64.tar.gz',
     ),
   ];
 

@@ -1,6 +1,6 @@
 # Flutter Frontend Scripts Guide
 
-This directory contains build and release scripts for the Songloft Flutter frontend.
+This directory contains build and release scripts for the Roomtone Flutter frontend.
 
 ## 📋 Script List
 

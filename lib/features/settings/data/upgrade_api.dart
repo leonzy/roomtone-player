@@ -84,8 +84,7 @@ class UpgradeCheck {
     this.currentChannel,
     this.currentBuildType,
     this.availableUpdates = const [],
-    this.releaseUrl =
-        'https://github.com/songloft-org/songloft/releases/latest',
+    this.releaseUrl = 'https://github.com/leonzy/roomtone/releases/latest',
   });
 
   factory UpgradeCheck.fromJson(Map<String, dynamic> json) {

@@ -38,7 +38,7 @@ URL validation rejects raw or encoded dot segments and backslashes before Dart U
 
 Release tags locate the actual Release referenced by the download URL; they need not equal manifest versions. For example, tag `v0.17` can accompany manifest version `0.17.0`. Download URLs, actual Release tags and uploaded assets are still checked, and update-manifest chain version consistency remains enforced.
 
-Details show the version, permissions and minimum host version. Installation requires confirmation that Songloft has not reviewed the plugin; conflicting entry paths require replacement confirmation. Unknown or insufficient host versions and unavailable installed-plugin data disable installation. The existing server installation endpoint is reused; format validation is not a security review. Details use a bottom sheet on narrow screens and a dialog on wide screens.
+Details show the version, permissions and minimum host version. Installation requires confirmation that Roomtone has not reviewed the plugin; conflicting entry paths require replacement confirmation. Unknown or insufficient host versions and unavailable installed-plugin data disable installation. The existing server installation endpoint is reused; format validation is not a security review. Details use a bottom sheet on narrow screens and a dialog on wide screens.
 
 When the server explicitly reports `dev`, all plugins bypass the minimum host version check. Stable servers still compare minimum versions; failed version requests and other unrecognized versions require a retry. `dev` does not bypass plugin validation, installed-plugin data checks or installation confirmation.
 

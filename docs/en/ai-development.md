@@ -4,7 +4,7 @@
 
 Investigate, implement, validate, self-review, and deliver continuously after task assignment without separate stage approvals. Check worktrees, local AGENTS, applicable LESSONS, and business references; preserve user edits. Ask for essential missing information, product decisions, or scope expansion. Do not repeat existing authorization requests. Commits, pushes, formal releases, and Issue writes each need explicit authorization. Commit directly to main, children before parent pointers.
 
-Shared mechanics are in the [parent AI workflow](https://github.com/songloft-org/songloft/blob/main/docs/en/ai-development.md). Synchronize the Chinese version; local business, device, and validation requirements take precedence.
+Shared mechanics are in the [parent AI workflow](https://github.com/leonzy/roomtone/blob/main/docs/en/ai-development.md). Synchronize the Chinese version; local business, device, and validation requirements take precedence.
 
 ## Validation and Evidence
 

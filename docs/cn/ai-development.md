@@ -4,7 +4,7 @@
 
 任务交办后连续调查、实现、验证、自审、交付，不逐阶段确认。先检查工作树，读本地 AGENTS、适用 LESSONS 和业务文档，保留用户改动。关键缺失信息、产品决定或扩大范围时才询问；已有授权不重复询问。提交、推送、正式发布和 Issue 写操作分别需要明确授权，直接提交 main，子仓库先提交、父仓库后更新指针。
 
-公共机制见 [父仓库 AI 流程](https://github.com/songloft-org/songloft/blob/main/docs/ai-development.md)。本文件与英文版同步；本仓库的业务、设备和验证要求优先。
+公共机制见 [父仓库 AI 流程](https://github.com/leonzy/roomtone/blob/main/docs/ai-development.md)。本文件与英文版同步；本仓库的业务、设备和验证要求优先。
 
 ## 验证与证据
 

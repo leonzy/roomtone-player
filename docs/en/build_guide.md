@@ -1,8 +1,8 @@
-# Songloft Flutter Frontend Build Guide
+# Roomtone Flutter Frontend Build Guide
 
 ## 📦 Overview
 
-`build-frontend.sh` builds the Songloft Flutter frontend, supporting per-platform builds or parallel builds across all platforms.
+`build-frontend.sh` builds the Roomtone Flutter frontend, supporting per-platform builds or parallel builds across all platforms.
 
 ### Supported Platforms
 

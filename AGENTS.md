@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件为 AI 编程助手提供 Songloft Flutter 前端的**入口信息**。代码本身是真实来源，本文件仅提供导航和约定。
+本文件为 AI 编程助手提供 Roomtone Flutter 前端的**入口信息**。代码本身是真实来源，本文件仅提供导航和约定。
 
 英文版见 [AGENTS.en.md](AGENTS.en.md)，内容、结构与本文件同步。
 
@@ -19,9 +19,9 @@
 
 ## 项目概述
 
-Songloft 跨平台音乐播放器，基于 Flutter 3.41+ / Dart 3.7+ 构建，支持 iOS、Android、macOS、Windows、Linux、Web 六端。
+Roomtone 跨平台音乐播放器，基于 Flutter 3.41+ / Dart 3.7+ 构建，支持 iOS、Android、macOS、Windows、Linux、Web 六端。
 
-独立仓库 [songloft-org/songloft-player](https://github.com/songloft-org/songloft-player)，作为父仓库 [songloft](https://github.com/songloft-org/songloft) 的子模块。后端 API 默认 `http://localhost:58091`（账号 admin/admin）。
+独立仓库 [songloft-org/songloft-player](https://github.com/leonzy/roomtone-player)，作为父仓库 [songloft](https://github.com/leonzy/roomtone) 的子模块。后端 API 默认 `http://localhost:58091`（账号 admin/admin）。
 
 ---
 
@@ -185,7 +185,7 @@ Bundle 版通过 `--dart-define=HAS_BACKEND=true` 注入（`AppConfig.hasEmbedde
 | 版本 | 发布仓库 | 产物名 | 由谁构建 |
 |------|---------|--------|---------|
 | 标准版 | `songloft-org/songloft-player` | `songloft-*.apk` 等 | 本仓库 `build-and-release.yml` |
-| Bundle 版 | 父仓库 `songloft-org/songloft` | `songloft-bundled-*` | 父仓库 `release.yml` |
+| Bundle 版 | 父仓库 `songloft-org/songloft` | `roomtone-bundled-*` | 父仓库 `release.yml` |
 
 - `FrontendVersionApi` 的更新检查仓库由 `AppConfig.frontendUpdateRepo`（`hasEmbeddedBackend ? frontendBundleRepo : frontendRepo`，编译期固定）决定；`frontendUpdateReleasesUrl` 同理。
 - **不要**在更新流程里硬编码 `songloft-org/songloft-player`：bundle 版注入的 `FRONTEND_VERSION` 是父仓库 tag，若仍查 player 仓库，版本比较口径错配、且用户会下载到丢失内嵌后端的标准版覆盖安装。

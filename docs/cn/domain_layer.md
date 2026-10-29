@@ -1,6 +1,6 @@
 # Domain 层架构
 
-> 本文档描述 Songloft Player 的纯 Dart Domain 层设计。Domain 层将核心业务逻辑从 Flutter/Riverpod 表现层中剥离，实现独立单元测试和清晰的关注点分离。
+> 本文档描述 Roomtone Player 的纯 Dart Domain 层设计。Domain 层将核心业务逻辑从 Flutter/Riverpod 表现层中剥离，实现独立单元测试和清晰的关注点分离。
 
 ---
 

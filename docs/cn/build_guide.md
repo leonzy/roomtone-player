@@ -1,8 +1,8 @@
-# Songloft Flutter 前端构建指南
+# Roomtone Flutter 前端构建指南
 
 ## 📦 概述
 
-`build-frontend.sh` 用于构建 Songloft Flutter 前端，支持按平台单独构建或并行构建所有平台。
+`build-frontend.sh` 用于构建 Roomtone Flutter 前端，支持按平台单独构建或并行构建所有平台。
 
 ### 支持的平台
 

@@ -1,6 +1,6 @@
 # Flutter 前端脚本指南
 
-本目录包含 Songloft Flutter 前端的构建与发布脚本。
+本目录包含 Roomtone Flutter 前端的构建与发布脚本。
 
 ## 📋 脚本列表
 

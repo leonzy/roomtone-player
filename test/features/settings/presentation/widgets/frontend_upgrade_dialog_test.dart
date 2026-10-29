@@ -81,7 +81,7 @@ void main() {
 
     expect(
       launchedUrl,
-      'https://github.com/songloft-org/songloft-player/releases/tag/dev',
+      'https://github.com/leonzy/roomtone-player/releases/tag/dev',
     );
   });
 
@@ -97,7 +97,7 @@ void main() {
 
     expect(
       launchedUrl,
-      'https://ghfast.top/https://github.com/songloft-org/songloft-player/releases/tag/dev',
+      'https://ghfast.top/https://github.com/leonzy/roomtone-player/releases/tag/dev',
     );
   });
 
@@ -121,8 +121,7 @@ void main() {
 /// dev tag 的 GitHub release 响应（tag_name=dev → 与本地 'dev' 同渠道且判定为最新）
 Map<String, dynamic> _releaseJson() => {
   'tag_name': 'dev',
-  'html_url':
-      'https://github.com/songloft-org/songloft-player/releases/tag/dev',
+  'html_url': 'https://github.com/leonzy/roomtone-player/releases/tag/dev',
   'body': '- :bug: fix something',
   'published_at': '2026-07-01T00:00:00Z',
   'assets': <dynamic>[],

@@ -1,6 +1,6 @@
 # Domain Layer Architecture
 
-> This document describes the pure-Dart Domain layer of Songloft Player. The Domain layer decouples core business logic from the Flutter/Riverpod presentation layer, enabling independent unit testing and clear separation of concerns.
+> This document describes the pure-Dart Domain layer of Roomtone Player. The Domain layer decouples core business logic from the Flutter/Riverpod presentation layer, enabling independent unit testing and clear separation of concerns.
 
 ---
 

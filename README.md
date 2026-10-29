@@ -1,24 +1,24 @@
-# Songloft Flutter
+# Roomtone Flutter
 
 [English](README.en.md) | 中文
 
 [![Build and Release](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/songloft-org/songloft-player/actions/workflows/build-and-release.yml)
-[![GitHub License](https://img.shields.io/github/license/songloft-org/songloft-player)](https://github.com/songloft-org/songloft-player)
-[![GitHub Release](https://img.shields.io/github/v/release/songloft-org/songloft-player)](https://github.com/songloft-org/songloft-player/releases)
-[![Stars](https://img.shields.io/github/stars/songloft-org/songloft-player)](https://github.com/songloft-org/songloft-player/stargazers)
+[![GitHub License](https://img.shields.io/github/license/songloft-org/songloft-player)](https://github.com/leonzy/roomtone-player)
+[![GitHub Release](https://img.shields.io/github/v/release/songloft-org/songloft-player)](https://github.com/leonzy/roomtone-player/releases)
+[![Stars](https://img.shields.io/github/stars/songloft-org/songloft-player)](https://github.com/leonzy/roomtone-player/stargazers)
 
 <p align="center">
-  <strong>🎵 Songloft 跨平台音乐播放器 — 基于 Flutter 构建</strong>
+  <strong>🎵 Roomtone 跨平台音乐播放器 — 基于 Flutter 构建</strong>
 </p>
 
-Songloft 跨平台音乐播放器，基于 Flutter 构建，支持 iOS、Android、macOS、Windows、Linux、Web 六端。支持 **Bundle 本地模式**：内嵌 Go 后端，无需部署服务器即可播放本地音乐。
+Roomtone 跨平台音乐播放器，基于 Flutter 构建，支持 iOS、Android、macOS、Windows、Linux、Web 六端。支持 **Bundle 本地模式**：内嵌 Go 后端，无需部署服务器即可播放本地音乐。
 
 「设置 → 播放设置 → 歌词页屏幕常亮」可在查看歌词时保持亮屏，默认关闭、仅保存到本机。手机返回封面、离开播放器或切到后台后恢复系统自动熄屏；宽屏播放器在歌词可见时生效，暂停播放仍可查看歌词。Web 端受浏览器亮屏能力和权限限制，不支持或拒绝时不影响播放。
 
 <p align="center">
-  <a href="https://github.com/songloft-org/songloft-player">🏠 GitHub</a> •
-  <a href="https://github.com/songloft-org/songloft-player/releases">📥 下载</a> •
-  <a href="https://github.com/songloft-org/songloft-player/issues">💬 问题反馈</a>
+  <a href="https://github.com/leonzy/roomtone-player">🏠 GitHub</a> •
+  <a href="https://github.com/leonzy/roomtone-player/releases">📥 下载</a> •
+  <a href="https://github.com/leonzy/roomtone-player/issues">💬 问题反馈</a>
 </p>
 
 ## 截图
@@ -27,32 +27,32 @@ https://github.com/songloft-org/songloft/issues/6
 
 ## 下载安装
 
-从 [GitHub Releases](https://github.com/songloft-org/songloft-player/releases/latest) 下载最新版本：
+从 [GitHub Releases](https://github.com/leonzy/roomtone-player/releases/latest) 下载最新版本：
 
 Release 正文展示版本变更，并保留本节的安装说明链接；历史记录保存在中文 [CHANGELOG.md](CHANGELOG.md)，在版本发布成功后自动更新。各平台安装说明见下表。
 
-本仓库发布的是需要连接 [Songloft 服务器](https://github.com/songloft-org/songloft)的标准 Flutter 客户端，安装后填写服务器地址并登录。需要内嵌后端的本地模式，请从[主工程 Releases](https://github.com/songloft-org/songloft/releases) 下载 `songloft-bundled-*` 文件。
+本仓库发布的是需要连接 [Roomtone 服务器](https://github.com/leonzy/roomtone)的标准 Flutter 客户端，安装后填写服务器地址并登录。需要内嵌后端的本地模式，请从[主工程 Releases](https://github.com/leonzy/roomtone/releases) 下载 `roomtone-bundled-*` 文件。
 
 在 Release 页的 **Assets** 中选择适合设备的文件；部分安装格式可能未提供，以实际附件为准。
 
 | 平台 | 下载链接 | 说明 |
 |------|----------|------|
-| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-standalone.tar.gz) | 解压到静态服务器，打开站点后配置后端 API 地址；跨源部署需要后端允许该站点访问 |
-| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-web-embedded.tar.gz) | 用于同源静态服务或后端嵌入构建，隐藏 API 地址输入；解压不会自动替换已运行的服务器前端 |
-| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.tar.gz) | 解压后运行应用，保留完整目录 |
-| | [songloft-linux-x64.deb](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64，使用系统包管理器安装 |
-| | [songloft-linux-x64.rpm](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64，使用系统包管理器安装 |
-| | [songloft-linux-x64.AppImage](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-linux-x64.AppImage) | 添加执行权限后运行 |
-| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.zip) | x64 便携版，解压后运行应用，保留同目录全部文件 |
-| | [songloft-windows-x64.msix](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-windows-x64.msix) | x64 安装版，按系统提示安装 |
-| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.dmg) | Universal (Intel/Apple Silicon)，打开 DMG 后将应用拖入「应用程序」 |
-| | [songloft-macos.zip](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-macos.zip) | Universal (Intel/Apple Silicon)，解压 ZIP 后将应用移入「应用程序」 |
-| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 设备（推荐），下载并打开 APK，按提示允许安装 |
-| | [songloft-armeabi-v7a.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-armeabi-v7a.apk) | 32 位 ARM 设备，下载并打开 APK，按提示允许安装 |
-| | [songloft-x86_64.apk](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-x86_64.apk) | Intel 设备或模拟器，下载并打开 APK，按提示允许安装 |
-| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/songloft-org/songloft-player/releases/latest/download/songloft-ios-nosign.ipa) | 未签名设备包，需使用自己的开发者证书和适用于目标设备的 provisioning profile 重签后安装 |
+| 🌐 **Web (standalone)** | [songloft-web-standalone.tar.gz](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-web-standalone.tar.gz) | 解压到静态服务器，打开站点后配置后端 API 地址；跨源部署需要后端允许该站点访问 |
+| 🌐 **Web (embedded)** | [songloft-web-embedded.tar.gz](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-web-embedded.tar.gz) | 用于同源静态服务或后端嵌入构建，隐藏 API 地址输入；解压不会自动替换已运行的服务器前端 |
+| 🐧 **Linux** | [songloft-linux-x64.tar.gz](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.tar.gz) | 解压后运行应用，保留完整目录 |
+| | [songloft-linux-x64.deb](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.deb) | Debian/Ubuntu x64，使用系统包管理器安装 |
+| | [songloft-linux-x64.rpm](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.rpm) | Fedora/RHEL/CentOS x64，使用系统包管理器安装 |
+| | [songloft-linux-x64.AppImage](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-linux-x64.AppImage) | 添加执行权限后运行 |
+| 🪟 **Windows** | [songloft-windows-x64.zip](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-windows-x64.zip) | x64 便携版，解压后运行应用，保留同目录全部文件 |
+| | [songloft-windows-x64.msix](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-windows-x64.msix) | x64 安装版，按系统提示安装 |
+| 🍎 **macOS** | [songloft-macos.dmg](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-macos.dmg) | Universal (Intel/Apple Silicon)，打开 DMG 后将应用拖入「应用程序」 |
+| | [songloft-macos.zip](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-macos.zip) | Universal (Intel/Apple Silicon)，解压 ZIP 后将应用移入「应用程序」 |
+| 🤖 **Android** | [songloft-arm64-v8a.apk](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-arm64-v8a.apk) | ARM64 设备（推荐），下载并打开 APK，按提示允许安装 |
+| | [songloft-armeabi-v7a.apk](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-armeabi-v7a.apk) | 32 位 ARM 设备，下载并打开 APK，按提示允许安装 |
+| | [songloft-x86_64.apk](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-x86_64.apk) | Intel 设备或模拟器，下载并打开 APK，按提示允许安装 |
+| 📱 **iOS** | [songloft-ios-nosign.ipa](https://github.com/leonzy/roomtone-player/releases/latest/download/songloft-ios-nosign.ipa) | 未签名设备包，需使用自己的开发者证书和适用于目标设备的 provisioning profile 重签后安装 |
 
-> 开发版可在 [dev 分支 Release](https://github.com/songloft-org/songloft-player/releases/tag/dev) 获取。
+> 开发版可在 [dev 分支 Release](https://github.com/leonzy/roomtone-player/releases/tag/dev) 获取。
 
 `patch-*.zip`、`manifest-*.json` 和 `version.json` 供客户端检查更新使用，无需手动安装。
 
@@ -211,7 +211,7 @@ flutter build apk --dart-define=HAS_BACKEND=true
 
 使用方式：首次启动在登录页点击「使用本地模式」→ 选择音乐目录 → 自动完成。可在设置页随时切换本地/远程模式。
 
-Bundle 版预编译安装包在 [songloft 主仓库 Releases](https://github.com/songloft-org/songloft/releases/latest) 下载（`songloft-bundled-*` 文件）。
+Bundle 版预编译安装包在 [songloft 主仓库 Releases](https://github.com/leonzy/roomtone/releases/latest) 下载（`roomtone-bundled-*` 文件）。
 
 ## 版本发布
 
@@ -236,13 +236,13 @@ Bundle 版预编译安装包在 [songloft 主仓库 Releases](https://github.com
 
 ## 后端
 
-**标准版**需要配合 [Songloft 后端](https://github.com/songloft-org/songloft) 服务运行。默认连接 `http://localhost:58091`，可在登录页中修改 API 地址。
+**标准版**需要配合 [Roomtone 后端](https://github.com/leonzy/roomtone) 服务运行。默认连接 `http://localhost:58091`，可在登录页中修改 API 地址。
 
 **Bundle 版**内嵌 Go 后端，无需单独部署服务器，启动后自动使用 admin/admin 登录。
 
 默认账号：admin / admin
 
-🔗 **服务端 GitHub**: [https://github.com/songloft-org/songloft](https://github.com/songloft-org/songloft)
+🔗 **服务端 GitHub**: [https://github.com/songloft-org/songloft](https://github.com/leonzy/roomtone)
 
 ## 许可证 / 第三方组件
 

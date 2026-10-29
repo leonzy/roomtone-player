@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides **entry-point information** for AI coding assistants working on the Songloft Flutter frontend. Code is the source of truth; this file contains navigation and conventions.
+This file provides **entry-point information** for AI coding assistants working on the Roomtone Flutter frontend. Code is the source of truth; this file contains navigation and conventions.
 
 See [AGENTS.md](AGENTS.md) for Chinese; keep content and structure synchronized.
 
@@ -19,9 +19,9 @@ See [AGENTS.md](AGENTS.md) for Chinese; keep content and structure synchronized.
 
 ## Project Overview
 
-Songloft is a cross-platform music player built with Flutter 3.41+ / Dart 3.7+, supporting iOS, Android, macOS, Windows, Linux, and Web.
+Roomtone is a cross-platform music player built with Flutter 3.41+ / Dart 3.7+, supporting iOS, Android, macOS, Windows, Linux, and Web.
 
-The independent [songloft-org/songloft-player](https://github.com/songloft-org/songloft-player) repository is a [Songloft](https://github.com/songloft-org/songloft) submodule. Default backend API: `http://localhost:58091` (admin/admin).
+The independent [songloft-org/songloft-player](https://github.com/leonzy/roomtone-player) repository is a [Roomtone](https://github.com/leonzy/roomtone) submodule. Default backend API: `http://localhost:58091` (admin/admin).
 
 ---
 
@@ -184,7 +184,7 @@ Paths are defined by `AppRoutes` in `core/router/app_router.dart`:
 | Edition | Release repository | Artifact | Builder |
 |---|---|---|---|
 | Standard | `songloft-org/songloft-player` | `songloft-*.apk`, etc. | Local `build-and-release.yml` |
-| Bundle | Parent `songloft-org/songloft` | `songloft-bundled-*` | Parent `release.yml` |
+| Bundle | Parent `songloft-org/songloft` | `roomtone-bundled-*` | Parent `release.yml` |
 
 - `FrontendVersionApi` uses compile-time `AppConfig.frontendUpdateRepo` (`hasEmbeddedBackend ? frontendBundleRepo : frontendRepo`), as does `frontendUpdateReleasesUrl`.
 - Never hardcode `songloft-org/songloft-player` in updates: Bundle's injected `FRONTEND_VERSION` is a parent tag; the wrong repository mismatches comparison and installs the standard edition without the local backend.

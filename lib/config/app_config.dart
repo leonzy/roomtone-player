@@ -100,15 +100,15 @@ class AppConfig {
       tracelyHost.isNotEmpty;
 
   /// 标准版前端 GitHub 仓库（连接独立部署的服务器，产物名 songloft-*）
-  static const String frontendRepo = 'songloft-org/songloft-player';
+  static const String frontendRepo = 'leonzy/roomtone-player';
 
   /// 标准版前端最新发布地址
   static const String frontendReleasesUrl =
-      'https://github.com/songloft-org/songloft-player/releases/latest';
+      'https://github.com/leonzy/roomtone-player/releases/latest';
 
-  /// Bundle 版（内嵌后端）发布在父仓库 songloft-org/songloft，产物名 songloft-bundled-*，
+  /// Bundle 版（内嵌后端）发布在父仓库 leonzy/roomtone，产物名 roomtone-bundled-*，
   /// 与标准版仓库/版本号相互独立。
-  static const String frontendBundleRepo = 'songloft-org/songloft';
+  static const String frontendBundleRepo = 'leonzy/roomtone';
 
   /// 「客户端更新」流程实际使用的检查仓库：bundle 版查父仓库，标准版查 player 仓库。
   /// hasEmbeddedBackend 为编译时常量，tree-shaking 会固定此值。
