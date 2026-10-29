@@ -187,7 +187,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubDiscoveryNotice.
   ///
   /// In zh, this message translates to:
-  /// **'自动发现 GitHub 社区插件，未经 Songloft 审核；格式校验不代表安全审核。'**
+  /// **'自动发现 GitHub 社区插件，未经 Roomtone 审核；格式校验不代表安全审核。'**
   String get githubDiscoveryNotice;
 
   /// No description provided for @githubDiscoverySearch.
@@ -247,7 +247,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubDiscoveryHelp.
   ///
   /// In zh, this message translates to:
-  /// **'搜索公开且未归档的非 fork 仓库，topic 为 songloft-plugin。只展示根 plugin.json 格式合规（根清单哈希可省略或留空）、允许跨 GitHub 仓库的更新清单和发布包和匹配的稳定 Release 中存在 .jsplugin.zip 安装包的插件。仓库更新排序不等于插件发布时间排序。网络失败记为暂未验证，可能因 GitHub 限流而只返回部分结果。源码和安装包未经 Songloft 审核，安装前请查看代码和权限。'**
+  /// **'搜索公开且未归档的非 fork 仓库，topic 为 songloft-plugin。只展示根 plugin.json 格式合规（根清单哈希可省略或留空）、允许跨 GitHub 仓库的更新清单和发布包和匹配的稳定 Release 中存在 .jsplugin.zip 安装包的插件。仓库更新排序不等于插件发布时间排序。网络失败记为暂未验证，可能因 GitHub 限流而只返回部分结果。源码和安装包未经 Roomtone 审核，安装前请查看代码和权限。'**
   String get githubDiscoveryHelp;
 
   /// No description provided for @githubDiscoveryRateLimited.
@@ -312,7 +312,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubDiscoveryInstallWarning.
   ///
   /// In zh, this message translates to:
-  /// **'将安装 {repository} 的 v{version}。该插件未经 Songloft 审核，可能访问其声明权限允许的数据和网络。请先查看源码。'**
+  /// **'将安装 {repository} 的 v{version}。该插件未经 Roomtone 审核，可能访问其声明权限允许的数据和网络。请先查看源码。'**
   String githubDiscoveryInstallWarning(String repository, String version);
 
   /// No description provided for @githubDiscoveryReplaceWarning.
@@ -1212,7 +1212,7 @@ abstract class AppLocalizations {
   /// No description provided for @coreNotificationChannel.
   ///
   /// In zh, this message translates to:
-  /// **'Songloft 播放控制'**
+  /// **'Roomtone 播放控制'**
   String get coreNotificationChannel;
 
   /// No description provided for @coreVersionDev.
@@ -2844,7 +2844,7 @@ abstract class AppLocalizations {
   /// No description provided for @authTvSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'使用您的账号登录 Songloft'**
+  /// **'使用您的账号登录 Roomtone'**
   String get authTvSubtitle;
 
   /// No description provided for @authLoginToContinue.
@@ -5922,7 +5922,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsServersFixedMusicDirHint.
   ///
   /// In zh, this message translates to:
-  /// **'通过「文件」App 或电脑（Finder / iTunes 文件共享）把音乐放入 Songloft 文件夹，然后重新扫描。'**
+  /// **'通过「文件」App 或电脑（Finder / iTunes 文件共享）把音乐放入 Roomtone 文件夹，然后重新扫描。'**
   String get settingsServersFixedMusicDirHint;
 
   /// No description provided for @settingsServersSwitchFailed.
@@ -7355,7 +7355,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsExportLogsShareSubject.
   ///
   /// In zh, this message translates to:
-  /// **'Songloft 日志'**
+  /// **'Roomtone 日志'**
   String get settingsExportLogsShareSubject;
 
   /// No description provided for @settingsExportLogsSuccess.
@@ -7397,7 +7397,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAboutDesc1.
   ///
   /// In zh, this message translates to:
-  /// **'Songloft 是一个开源的个人音乐服务器应用。'**
+  /// **'Roomtone 是一个开源的个人音乐服务器应用。'**
   String get settingsAboutDesc1;
 
   /// No description provided for @settingsAboutDesc2.
@@ -7935,7 +7935,7 @@ abstract class AppLocalizations {
   /// No description provided for @coreTrayOpen.
   ///
   /// In zh, this message translates to:
-  /// **'打开 Songloft'**
+  /// **'打开 Roomtone'**
   String get coreTrayOpen;
 
   /// No description provided for @coreTrayOpenLogs.

@@ -1858,7 +1858,7 @@ class _SettingsCategoryContentState
           link: true,
           label: l10n.settingsAboutGithubSemantics,
           child: InkWell(
-            onTap: () => _launchUrl('https://github.com/songloft-org/songloft'),
+            onTap: () => _launchUrl('https://github.com/leonzy/roomtone'),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

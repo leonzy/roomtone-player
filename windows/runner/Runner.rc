@@ -90,11 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.songloft" "\0"
-            VALUE "FileDescription", "Songloft" "\0"
+            VALUE "FileDescription", "Roomtone" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "songloft_flutter" "\0"
+            VALUE "InternalName", "roomtone" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.songloft. All rights reserved." "\0"
-            VALUE "OriginalFilename", "songloft_flutter.exe" "\0"
+            VALUE "OriginalFilename", "roomtone.exe" "\0"
+            // Legacy profile identity used by path_provider_windows and shared_preferences.
             VALUE "ProductName", "Songloft" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

@@ -59,7 +59,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubDiscoveryNotice =>
-      'Plugins de la comunidad descubiertos automáticamente. Songloft no los ha revisado; validar el formato no es una revisión de seguridad.';
+      'Plugins de la comunidad descubiertos automáticamente. Roomtone no los ha revisado; validar el formato no es una revisión de seguridad.';
 
   @override
   String get githubDiscoverySearch => 'Buscar plugins u owner/repo';
@@ -92,7 +92,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubDiscoveryHelp =>
-      'Busca repositorios públicos, no archivados y no derivados con el topic songloft-plugin. Deben tener un plugin.json válido en la raíz (los hashes pueden omitirse o estar vacíos), metadatos y paquetes que pueden proceder de otro repositorio de GitHub y una versión estable coincidente con un archivo .jsplugin.zip. El orden de actualización del repositorio difiere del orden de publicación del plugin. Los fallos de red quedan sin verificar; los límites de GitHub pueden dejar resultados incompletos. Songloft no ha revisado el código ni los paquetes. Revisa el código y los permisos antes de instalar.';
+      'Busca repositorios públicos, no archivados y no derivados con el topic songloft-plugin. Deben tener un plugin.json válido en la raíz (los hashes pueden omitirse o estar vacíos), metadatos y paquetes que pueden proceder de otro repositorio de GitHub y una versión estable coincidente con un archivo .jsplugin.zip. El orden de actualización del repositorio difiere del orden de publicación del plugin. Los fallos de red quedan sin verificar; los límites de GitHub pueden dejar resultados incompletos. Roomtone no ha revisado el código ni los paquetes. Revisa el código y los permisos antes de instalar.';
 
   @override
   String get githubDiscoveryRateLimited =>
@@ -137,7 +137,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String githubDiscoveryInstallWarning(String repository, String version) {
-    return 'Instalar v$version de $repository. Songloft no ha revisado este plugin y puede acceder a los datos y redes permitidos por sus permisos declarados. Revisa primero el código.';
+    return 'Instalar v$version de $repository. Roomtone no ha revisado este plugin y puede acceder a los datos y redes permitidos por sus permisos declarados. Revisa primero el código.';
   }
 
   @override
@@ -660,7 +660,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get coreBackToHome => 'Volver al inicio';
 
   @override
-  String get coreNotificationChannel => 'Control de reproducción de Songloft';
+  String get coreNotificationChannel => 'Control de reproducción de Roomtone';
 
   @override
   String get coreVersionDev => 'Compilación de desarrollo';
@@ -1603,7 +1603,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authLogin => 'Iniciar sesión';
 
   @override
-  String get authTvSubtitle => 'Inicia sesión en Songloft con tu cuenta';
+  String get authTvSubtitle => 'Inicia sesión en Roomtone con tu cuenta';
 
   @override
   String get authLoginToContinue => 'Inicia sesión para continuar';
@@ -3459,7 +3459,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsServersFixedMusicDirHint =>
-      'Coloca la música en la carpeta de Songloft mediante la app Archivos o una computadora (Finder / uso compartido de archivos de iTunes) y vuelve a escanear.';
+      'Coloca la música en la carpeta de Roomtone mediante la app Archivos o una computadora (Finder / uso compartido de archivos de iTunes) y vuelve a escanear.';
 
   @override
   String settingsServersSwitchFailed(String error) {
@@ -4312,7 +4312,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Empaqueta los registros de frontend y backend (con datos sensibles omitidos) para informes de errores';
 
   @override
-  String get settingsExportLogsShareSubject => 'Registros de Songloft';
+  String get settingsExportLogsShareSubject => 'Registros de Roomtone';
 
   @override
   String get settingsExportLogsSuccess =>
@@ -4341,7 +4341,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsAboutDesc1 =>
-      'Songloft es una app de servidor de música personal de código abierto.';
+      'Roomtone es una app de servidor de música personal de código abierto.';
 
   @override
   String get settingsAboutDesc2 =>
@@ -4671,7 +4671,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get coreTrayOpen => 'Abrir Songloft';
+  String get coreTrayOpen => 'Abrir Roomtone';
 
   @override
   String get coreTrayOpenLogs => 'Abrir directorio de registros';

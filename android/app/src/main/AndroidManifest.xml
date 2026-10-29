@@ -16,7 +16,7 @@
     <!-- 悬浮歌词窗口：仅在设置开关打开时才在运行时申请，声明本身不会弹窗（songloft-org/songloft#318） -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <application
-        android:label="Songloft"
+        android:label="Roomtone"
         android:name=".SongloftApplication"
         android:icon="@mipmap/ic_launcher"
         android:banner="@mipmap/ic_launcher"

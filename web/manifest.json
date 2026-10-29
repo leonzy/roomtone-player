@@ -1,11 +1,11 @@
 {
-    "name": "Songloft",
-    "short_name": "Songloft",
+    "name": "Roomtone",
+    "short_name": "Roomtone",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Songloft - 跨平台音乐播放器",
+    "description": "Roomtone - 跨平台音乐播放器",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Songloft Flutter 前端 Docker 构建脚本
+# Roomtone Flutter 前端 Docker 构建脚本
 # 用法（从 frontend 目录或项目根目录运行）：
 #   ./scripts/docker-build-frontend.sh              # 构建所有平台
 #   ./scripts/docker-build-frontend.sh android       # 仅构建 Android

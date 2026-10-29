@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Songloft Flutter 前端构建脚本
+# Roomtone Flutter 前端构建脚本
 # 用法：./scripts/build-frontend.sh <platform> [output_dir]
 # 平台：web | web-embedded | linux | windows | macos | android | ios | all
 #
@@ -48,7 +48,7 @@ FLUTTER_VERSION_ARGS=(
 
 # 帮助信息
 show_help() {
-    echo -e "${BLUE}Songloft Flutter 前端构建工具${NC}"
+    echo -e "${BLUE}Roomtone Flutter 前端构建工具${NC}"
     echo ""
     echo "用法：$0 <platform> [output_dir]"
     echo ""
@@ -104,7 +104,7 @@ check_fastforge() {
 # 准备构建环境
 prepare() {
     echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}Songloft Flutter 前端构建工具${NC}"
+    echo -e "${BLUE}Roomtone Flutter 前端构建工具${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo ""
     echo -e "${BLUE}构建平台:${NC} $PLATFORM"

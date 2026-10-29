@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Songloft Flutter 前端版本发布脚本（统一发布契约：与 clients/player-lynx、父仓库 bump-version 完全一致）
+# Roomtone Flutter 前端版本发布脚本（统一发布契约：与 clients/player-lynx、父仓库 bump-version 完全一致）
 #
 # 用法：./scripts/bump-version.sh [major|minor|patch|release|X.Y.Z[-prerelease]] [--dry-run] [--yes] [--no-push]
 # 示例：
@@ -36,7 +36,7 @@ FRONTEND_DIR="$(dirname "$SCRIPT_DIR")"
 PUBSPEC_FILE="$FRONTEND_DIR/pubspec.yaml"
 
 usage() {
-    echo "Songloft Flutter 前端版本发布工具（统一发布契约）"
+    echo "Roomtone Flutter 前端版本发布工具（统一发布契约）"
     echo ""
     echo "用法:"
     echo "  $0 [major|minor|patch|release|X.Y.Z[-prerelease]] [--dry-run] [--yes] [--no-push]"
@@ -165,7 +165,7 @@ bump_version() {
 # ---------- 主流程 ----------
 
 main() {
-    log_info "=== Songloft Flutter 前端版本发布工具 ==="
+    log_info "=== Roomtone Flutter 前端版本发布工具 ==="
 
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
         log_err "当前目录不是 git 仓库"; exit 1
@@ -276,7 +276,7 @@ main() {
     fi
 
     echo "" >&2
-    log_info "Release URL: https://github.com/songloft-org/songloft-player/releases/tag/${tag}"
+    log_info "Release URL: https://github.com/leonzy/roomtone-player/releases/tag/${tag}"
 
     # 最后一行 stdout 输出新版本号（带 v 前缀），方便链式调用
     echo "$tag"

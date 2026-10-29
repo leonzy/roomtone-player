@@ -53,7 +53,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get githubDiscoveryNotice =>
-      '自动发现 GitHub 社区插件，未经 Songloft 审核；格式校验不代表安全审核。';
+      '自动发现 GitHub 社区插件，未经 Roomtone 审核；格式校验不代表安全审核。';
 
   @override
   String get githubDiscoverySearch => '搜索插件或 owner/repo';
@@ -86,7 +86,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get githubDiscoveryHelp =>
-      '搜索公开且未归档的非 fork 仓库，topic 为 songloft-plugin。只展示根 plugin.json 格式合规（根清单哈希可省略或留空）、允许跨 GitHub 仓库的更新清单和发布包和匹配的稳定 Release 中存在 .jsplugin.zip 安装包的插件。仓库更新排序不等于插件发布时间排序。网络失败记为暂未验证，可能因 GitHub 限流而只返回部分结果。源码和安装包未经 Songloft 审核，安装前请查看代码和权限。';
+      '搜索公开且未归档的非 fork 仓库，topic 为 songloft-plugin。只展示根 plugin.json 格式合规（根清单哈希可省略或留空）、允许跨 GitHub 仓库的更新清单和发布包和匹配的稳定 Release 中存在 .jsplugin.zip 安装包的插件。仓库更新排序不等于插件发布时间排序。网络失败记为暂未验证，可能因 GitHub 限流而只返回部分结果。源码和安装包未经 Roomtone 审核，安装前请查看代码和权限。';
 
   @override
   String get githubDiscoveryRateLimited => 'GitHub 请求已限流，已验证的插件仍可查看，请稍后重试。';
@@ -126,7 +126,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String githubDiscoveryInstallWarning(String repository, String version) {
-    return '将安装 $repository 的 v$version。该插件未经 Songloft 审核，可能访问其声明权限允许的数据和网络。请先查看源码。';
+    return '将安装 $repository 的 v$version。该插件未经 Roomtone 审核，可能访问其声明权限允许的数据和网络。请先查看源码。';
   }
 
   @override
@@ -627,7 +627,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coreBackToHome => '返回首页';
 
   @override
-  String get coreNotificationChannel => 'Songloft 播放控制';
+  String get coreNotificationChannel => 'Roomtone 播放控制';
 
   @override
   String get coreVersionDev => '开发版本';
@@ -1528,7 +1528,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authLogin => '登录';
 
   @override
-  String get authTvSubtitle => '使用您的账号登录 Songloft';
+  String get authTvSubtitle => '使用您的账号登录 Roomtone';
 
   @override
   String get authLoginToContinue => '登录以继续';
@@ -3256,7 +3256,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsServersFixedMusicDirHint =>
-      '通过「文件」App 或电脑（Finder / iTunes 文件共享）把音乐放入 Songloft 文件夹，然后重新扫描。';
+      '通过「文件」App 或电脑（Finder / iTunes 文件共享）把音乐放入 Roomtone 文件夹，然后重新扫描。';
 
   @override
   String settingsServersSwitchFailed(String error) {
@@ -4052,7 +4052,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsExportLogsSubtitle => '打包前后端日志（已脱敏）用于提交问题反馈';
 
   @override
-  String get settingsExportLogsShareSubject => 'Songloft 日志';
+  String get settingsExportLogsShareSubject => 'Roomtone 日志';
 
   @override
   String get settingsExportLogsSuccess => '日志已打包，请选择分享或保存方式';
@@ -4077,7 +4077,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAccountLoading => '加载中...';
 
   @override
-  String get settingsAboutDesc1 => 'Songloft 是一个开源的个人音乐服务器应用。';
+  String get settingsAboutDesc1 => 'Roomtone 是一个开源的个人音乐服务器应用。';
 
   @override
   String get settingsAboutDesc2 => '支持本地音乐库管理、在线播放和插件扩展。';
@@ -4393,7 +4393,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get coreTrayOpen => '打开 Songloft';
+  String get coreTrayOpen => '打开 Roomtone';
 
   @override
   String get coreTrayOpenLogs => '打开日志目录';
