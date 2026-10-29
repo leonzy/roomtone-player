@@ -21,7 +21,7 @@ See [AGENTS.md](AGENTS.md) for Chinese; keep content and structure synchronized.
 
 Roomtone is a cross-platform music player built with Flutter 3.41+ / Dart 3.7+, supporting iOS, Android, macOS, Windows, Linux, and Web.
 
-The independent [songloft-org/songloft-player](https://github.com/leonzy/roomtone-player) repository is a [Roomtone](https://github.com/leonzy/roomtone) submodule. Default backend API: `http://localhost:58091` (admin/admin).
+The independent [leonzy/roomtone-player](https://github.com/leonzy/roomtone-player) repository is a [Roomtone](https://github.com/leonzy/roomtone) submodule. Default backend API: `http://localhost:58091` (admin/admin).
 
 ---
 
