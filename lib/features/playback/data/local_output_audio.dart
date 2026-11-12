@@ -1,13 +1,32 @@
 import '../../player/presentation/providers/player_provider.dart';
 import 'local_output.dart';
+import '../../player/domain/player_state.dart' show SleepTimerMode;
 
 /// 把 [PlayerNotifier] 适配成 local sink 的音频执行接口。
 ///
 /// 设备指令在本机音频上下文中执行；界面可同时遥控另一个区域。
-class PlayerNotifierLocalAudio implements LocalAudio {
+class PlayerNotifierLocalAudio implements LocalAudio, LocalSleepAudio {
   PlayerNotifierLocalAudio(this._player);
 
   final PlayerNotifier _player;
+
+  @override
+  void setSleepAfterSongs(int songs) => _player.runOnLocalOutput(() {
+    if (songs > 0) {
+      _player.setSleepTimerAfterSongs(songs);
+    } else if (_player.currentState.sleepTimer?.mode ==
+        SleepTimerMode.afterSongs) {
+      _player.cancelSleepTimer();
+    }
+  });
+
+  @override
+  int get sleepSongsRemaining => _player.runOnLocalOutput(() {
+    final timer = _player.currentState.sleepTimer;
+    return timer?.mode == SleepTimerMode.afterSongs
+        ? (timer?.remainingSongs ?? 0)
+        : 0;
+  });
 
   @override
   Future<void> load(int songId, {required Duration position}) =>

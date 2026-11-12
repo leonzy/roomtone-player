@@ -18,15 +18,18 @@ class OutputApi {
   Future<Map<String, dynamic>> sleepTimer(
     String groupId, {
     int? minutes,
+    int? songs,
   }) async {
     try {
       final path = '$_groupBase/$groupId/sleep';
       final response =
-          minutes == null
+          minutes == null && songs == null
               ? await dio.get<Map<String, dynamic>>(path)
               : await dio.post<Map<String, dynamic>>(
                 path,
-                data: {'minutes': minutes},
+                data: {
+                  if (songs != null) 'songs': songs else 'minutes': minutes,
+                },
               );
       return response.data ?? {};
     } on DioException catch (e) {

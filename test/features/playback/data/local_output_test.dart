@@ -36,7 +36,14 @@ class _FakeTransport implements LocalOutputTransport {
 }
 
 /// 记录调用顺序的音频 fake；字段可配置，供 report 报文断言。
-class _FakeAudio implements LocalAudio {
+class _FakeAudio implements LocalAudio, LocalSleepAudio {
+  @override
+  int sleepSongsRemaining = 0;
+  @override
+  void setSleepAfterSongs(int songs) {
+    sleepSongsRemaining = songs;
+  }
+
   int? loadedSongId;
   Duration? loadedPosition;
   Completer<void>? loadGate;
@@ -183,6 +190,42 @@ Future<void> _flush() async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'song sleep command and generation are mirrored through heartbeat',
+    () async {
+      final transport = _FakeTransport();
+      final audio = _FakeAudio();
+      final output = _buildOutput(transport: transport, audio: audio);
+      transport.setConnected(true);
+      await output.start();
+      transport.emit({
+        'cmd': 'sleep_after_songs',
+        'songs': 3,
+        'sleep_generation': 123,
+      });
+      await _flush();
+      expect(audio.sleepSongsRemaining, 3);
+      transport.emit({
+        'cmd': 'sleep_after_songs',
+        'songs': 2,
+        'sleep_generation': 122,
+      });
+      await _flush();
+      expect(audio.sleepSongsRemaining, 3);
+      expect(output.buildReportMessage()['sleep_generation'], 123);
+      expect(output.buildReportMessage()['sleep_remaining'], 3);
+      audio.sleepSongsRemaining = 0;
+      expect(output.buildReportMessage()['sleep_remaining'], 0);
+      transport.emit({'cmd': 'sleep_after_songs', 'songs': 0});
+      await _flush();
+      expect(
+        output.buildReportMessage().containsKey('sleep_generation'),
+        false,
+      );
+      await output.dispose();
+      await transport.close();
+    },
+  );
 
   group('LocalDeviceIdStore', () {
     test('首次生成后持久化，二次读取相同', () async {

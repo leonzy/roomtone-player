@@ -12,9 +12,15 @@ Future<void> showZoneSleep(
 ) async {
   final api = ref.read(outputApiProvider);
   var minutes = 30.0;
+  var bySongs = false;
+  var songs = 1;
   var busy = false;
   var error = '';
   final current = await api.sleepTimer(zone.id);
+  bySongs = current['active'] == true && current['mode'] == 'songs';
+  if (bySongs) {
+    songs = ((current['remaining_songs'] as num?)?.toInt() ?? 1).clamp(1, 1000);
+  }
   if (!context.mounted) return;
   await showDialog<void>(
     context: context,
@@ -34,16 +40,41 @@ Future<void> showZoneSleep(
                       ),
                       if (current['active'] == true)
                         const Text('此区域已有定时器，保存将替换它。'),
-                      Slider(
-                        value: minutes,
-                        min: 15,
-                        max: 120,
-                        divisions: 7,
-                        label: '${minutes.round()} 分钟',
-                        onChanged:
-                            busy ? null : (v) => setLocal(() => minutes = v),
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(value: false, label: Text('按时间')),
+                          ButtonSegment(value: true, label: Text('按歌曲')),
+                        ],
+                        selected: {bySongs},
+                        onSelectionChanged:
+                            busy
+                                ? null
+                                : (v) => setLocal(() => bySongs = v.first),
                       ),
-                      Text('${minutes.round()} 分钟后暂停此区域'),
+                      if (bySongs) ...[
+                        TextFormField(
+                          initialValue: '$songs',
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: '播放几首后休眠（1–1000）',
+                          ),
+                          onChanged:
+                              (v) =>
+                                  setLocal(() => songs = int.tryParse(v) ?? 0),
+                        ),
+                        const Text('包含当前歌曲，完整播完后暂停；手动切歌不扣减。'),
+                      ] else ...[
+                        Slider(
+                          value: minutes,
+                          min: 15,
+                          max: 120,
+                          divisions: 7,
+                          label: '${minutes.round()} 分钟',
+                          onChanged:
+                              busy ? null : (v) => setLocal(() => minutes = v),
+                        ),
+                        Text('${minutes.round()} 分钟后暂停此区域'),
+                      ],
                       if (error.isNotEmpty)
                         Text(error, style: const TextStyle(color: Colors.red)),
                     ],
@@ -62,14 +93,15 @@ Future<void> showZoneSleep(
                   ),
                   FilledButton(
                     onPressed:
-                        busy
+                        busy || (bySongs && (songs < 1 || songs > 1000))
                             ? null
                             : () async {
                               setLocal(() => busy = true);
                               try {
                                 await api.sleepTimer(
                                   zone.id,
-                                  minutes: minutes.round(),
+                                  minutes: bySongs ? null : minutes.round(),
+                                  songs: bySongs ? songs : null,
                                 );
                                 if (ctx.mounted) Navigator.pop(ctx);
                               } catch (e) {

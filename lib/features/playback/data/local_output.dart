@@ -82,6 +82,11 @@ class PlaybackSocketTransport implements LocalOutputTransport {
 /// 服务端指令最终落到本机播放器上的最小接口。
 ///
 /// 生产实现是 PlayerNotifier 的适配器；测试用 fake 记录调用顺序。
+abstract class LocalSleepAudio {
+  void setSleepAfterSongs(int songs);
+  int get sleepSongsRemaining;
+}
+
 abstract class LocalAudio {
   /// 加载歌曲但不自动起播（起播由随后的 play 指令按 play_at 触发）。
   Future<void> load(int songId, {required Duration position});
@@ -171,6 +176,8 @@ class LocalOutput with WidgetsBindingObserver {
 
   final LocalOutputTransport? _transport;
   final LocalAudio _audio;
+  int _sleepGeneration = 0;
+  int _lastSleepGeneration = 0;
   final LocalZoneMembership _membership;
   final LocalDeviceIdSource _deviceIdSource;
   final String deviceName;
@@ -269,6 +276,10 @@ class LocalOutput with WidgetsBindingObserver {
     'volume': _audio.volume.round().clamp(0, 100),
     'state': _playbackState,
     'rtt_ms': 0,
+    if (_sleepGeneration > 0 && _audio is LocalSleepAudio) ...{
+      'sleep_generation': _sleepGeneration,
+      'sleep_remaining': (_audio as LocalSleepAudio).sleepSongsRemaining,
+    },
   };
 
   String get _playbackState {
@@ -358,6 +369,19 @@ class LocalOutput with WidgetsBindingObserver {
   }
 
   void _handleCommand(String command, Map<String, dynamic> message) {
+    if (command == 'sleep_after_songs' && _audio is LocalSleepAudio) {
+      final generation = _asInt(message['sleep_generation']) ?? 0;
+      if (generation > 0 && generation < _lastSleepGeneration) return;
+      if (generation > _lastSleepGeneration) _lastSleepGeneration = generation;
+      final owned = _sleepGeneration > 0;
+      final count = _asInt(message['songs']) ?? 0;
+      _sleepGeneration =
+          count > 0 ? (_asInt(message['sleep_generation']) ?? 0) : 0;
+      if (count > 0 || owned) {
+        (_audio as LocalSleepAudio).setSleepAfterSongs(count);
+      }
+      return;
+    }
     if (!_takeover) return;
     switch (command) {
       case 'load':
